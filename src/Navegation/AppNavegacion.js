@@ -1,27 +1,31 @@
 import React, {useState, useEffect, useRef} from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import NavegacionPrincipal from "./NavegacionPrincipal";
+import AuthNavegation from "./AuthNavegacion";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import storageService from "../Services/WebStorageService";
 import { AppState } from "react-native";
 
 export default function AppNavegacion() {
-  const {isCargando, setEstaCargando} = useState(true);
-  const {userToken, setUserToken} = useState(null);
+  const [isCargando, setEstaCargando] = useState(true);
+  const [userToken, setUserToken] = useState(null);
   const appState = useRef(AppState.currentState);
 
   const loadToken = async () => {
     try {
-      const token = await AsyncStorage.getItem('userToken');
+      const token = await storageService.getItem('userToken');
+      console.log("AppNavegacion: Token cargado:", token ? "SÍ" : "NO");
       setUserToken(token);
     } catch (error) {
       console.error("Error al cargar el token:", error);
     } finally {
       setEstaCargando(false);
     }
+  };
 
-    useEffect(() => {
-      loadToken();
-    },[]);
+  useEffect(() => {
+    loadToken();
+  }, []);
 
   useEffect(() => {
     const handleAppStateChange = (nextAppState)=>{
@@ -32,8 +36,9 @@ export default function AppNavegacion() {
       appState.current = nextAppState;
     };
     const subscription = AppState.addEventListener("change", handleAppStateChange);
-    return () => {subscription.remove();
-    }
+    return () => {
+      subscription.remove();
+    };
   },[]);
 
   useEffect(() => {
@@ -41,14 +46,13 @@ export default function AppNavegacion() {
       if (AppState.current === 'active') {
         loadToken();
       }
-    }, 2000);
+    }, 1000); // Reducir a 1 segundo para respuesta más rápida
     return () => clearInterval(interval);
-  },[]);
+  }, []);
 
   return (
     <NavigationContainer>
       {userToken ? <NavegacionPrincipal /> : <AuthNavegation />}
     </NavigationContainer>
   );
-  }
 }

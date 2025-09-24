@@ -1,60 +1,22 @@
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Feather, Ionicons } from '@expo/vector-icons';
-import PantallaInicio from '../pantallas/PantallaInicio';
-import PerfilStack from '../stacks/PerfilStack';
-import ConfiguracionStack from '../stacks/ConfiguracionStack';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import PanelSelector from '../../Screen/Paneles/PanelSelector';
+import InicioStack from '../Stack/InicioStack';
 
-const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
 
 export default function NavegacionPrincipal() {
     return (
-        <Tab.Navigator
-            screenOptions={{
-                tabBarStyle: {
-                    backgroundColor: '#f8f8f8',
-                    borderTopWidth: 1,
-                    borderTopColor: '#e370b7ff',
-                    height: 60,
-                    paddingBottom: 5,
-                    paddingTop: 5,
-                },
-                tabBarActiveTintColor: 'black',
-                tabBarInactiveTintColor: '#955fa9ff',
-            }}
-        >
-            <Tab.Screen
-                name="Inicio"
-                component={PantallaInicio}
-                options={{
-                    headerShown: false,
-                    tabBarIcon: ({ color, size }) => (
-                        <Ionicons name="home" size={size} color={color} />
-                    ),
-                    tabBarLabel: 'Inicio',
-                }}
+        <Stack.Navigator initialRouteName="PanelSelector">
+            <Stack.Screen
+                name="PanelSelector"
+                component={PanelSelector}
+                options={{ headerShown: false }}
             />
-            <Tab.Screen
-                name="Perfil"
-                component={PerfilStack}
-                options={{
-                    headerShown: false,
-                    tabBarIcon: ({ color, size }) => (
-                        <Feather name="user" size={size} color={color} />
-                    ),
-                    tabBarLabel: 'Perfil',
-                }}
+            <Stack.Screen
+                name="InicioStack"
+                component={InicioStack}
+                options={{ headerShown: false }}
             />
-            <Tab.Screen
-                name="Configuracion"
-                component={ConfiguracionStack}
-                options={{
-                    headerShown: false,
-                    tabBarIcon: ({ color, size }) => (
-                        <Ionicons name="settings-outline" size={size} color={color} />
-                    ),
-                    tabBarLabel: 'Configuracion',
-                }}
-            />
-        </Tab.Navigator>
+        </Stack.Navigator>
     );
 }

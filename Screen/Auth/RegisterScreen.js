@@ -7,26 +7,124 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { registerUser } from "../../src/Services/RegisterService";
+import { testAsyncStorage, debugDatabase } from "../../src/Services/TestService";
+import { debugDatabase as debugDB, listAllUsers, verifyUserExists } from "../../src/Services/DatabaseDebugService";
 
 export default function RegisterScreen({ navigation }) {
   const [nombre, setNombre] = useState("");
   const [apellido, setApellido] = useState("");
   const [email, setEmail] = useState("");
   const [telefono, setTelefono] = useState("");
-  const [rol, setRol] = useState("user");
+  const [rol, setRol] = useState("paciente");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleRegister = () => {
+  // Debug AsyncStorage al cargar el componente
+  React.useEffect(() => {
+    const runDebug = async () => {
+      console.log("RegisterScreen: Ejecutando debug de AsyncStorage...");
+      await testAsyncStorage();
+      await debugDatabase();
+      await debugDB(); // Debug de la base de datos
+    };
+    runDebug();
+  }, []);
+
+  // Funciones de debug
+  const handleDebugDatabase = async () => {
+    console.log("=== DEBUG DE BASE DE DATOS ===");
+    const result = await debugDB();
+    Alert.alert("Debug BD", `Total usuarios: ${result.totalUsers}\nVer consola para detalles`);
+  };
+
+  const handleListUsers = async () => {
+    console.log("=== LISTANDO USUARIOS ===");
+    const result = await listAllUsers();
+    if (result.success) {
+      const userList = result.users.map(user => `${user.name} (${user.email})`).join('\n');
+      Alert.alert("Usuarios en BD", `Total: ${result.totalUsers}\n\n${userList}`);
+    } else {
+      Alert.alert("Error", "No se pudieron listar los usuarios");
+    }
+  };
+
+  const handleVerifyUser = async () => {
+    if (!email) {
+      Alert.alert("Error", "Ingresa un email para verificar");
+      return;
+    }
+    console.log("=== VERIFICANDO USUARIO ===");
+    const result = await verifyUserExists(email);
+    if (result.exists) {
+      Alert.alert("Usuario Encontrado", `✅ ${result.user.name} existe en la BD`);
+    } else {
+      Alert.alert("Usuario No Encontrado", `❌ ${email} no existe en la BD`);
+    }
+  };
+
+
+
+  const handleRegister = async () => {
     if (!nombre || !apellido || !email || !telefono || !password) {
       Alert.alert("Error", "Todos los campos son obligatorios");
       return;
     }
 
-    console.log({ nombre, apellido, email, telefono, rol, password });
-    Alert.alert("✨ Éxito", "Usuario registrado correctamente ");
-    navigation.replace("Login");
+    if (password.length < 6) {
+      Alert.alert("Error", "La contraseña debe tener al menos 6 caracteres");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      console.log("Registrando usuario:", { nombre, apellido, email, telefono, rol, password });
+      
+      // Preparar datos del usuario para la base de datos
+      const userData = {
+        nombre: nombre,
+        apellido: apellido,
+        email: email,
+        telefono: telefono,
+        rol: rol,
+        password: password, // En una app real, esto debería estar hasheado
+        name: `${nombre} ${apellido}`
+      };
+
+      // Registrar en la base de datos
+      const result = await registerUser(userData);
+      
+      if (result.success) {
+        console.log("Usuario registrado exitosamente en BD:", result.user);
+        console.log("Registro exitoso, navegando al login...");
+        
+        // Limpiar formulario
+        setNombre("");
+        setApellido("");
+        setEmail("");
+        setTelefono("");
+        setRol("paciente");
+        setPassword("");
+        
+        // Pequeño delay para asegurar que la navegación funcione
+        setTimeout(() => {
+          navigation.navigate("Login");
+        }, 500);
+      } else {
+        console.error("Error en registro:", result.message);
+        Alert.alert("Error", result.message);
+      }
+      
+    } catch (error) {
+      console.error("Error al registrar usuario:", error);
+      Alert.alert("Error", "Ocurrió un error al registrar el usuario");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -68,7 +166,7 @@ export default function RegisterScreen({ navigation }) {
             />
             <TextInput
               style={styles.input}
-              placeholder="Rol (admin o user)"
+              placeholder="Rol (paciente o medico)"
               placeholderTextColor="#b78fa2"
               value={rol}
               onChangeText={setRol}
@@ -82,23 +180,53 @@ export default function RegisterScreen({ navigation }) {
               onChangeText={setPassword}
             />
 
-            <TouchableOpacity onPress={handleRegister} activeOpacity={0.8}>
+            <TouchableOpacity 
+              onPress={handleRegister} 
+              activeOpacity={0.8}
+              disabled={loading}
+              style={loading ? styles.registerButtonDisabled : null}
+            >
               <LinearGradient
-                colors={["#f48fb1", "#ce93d8"]}
+                colors={loading ? ["#ccc", "#ddd"] : ["#f48fb1", "#ce93d8"]}
                 style={styles.registerButton}
               >
-                <Text style={styles.registerButtonText}>Registrar</Text>
+                {loading ? (
+                  <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="small" color="#fff" />
+                    <Text style={styles.registerButtonText}>Registrando...</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.registerButtonText}>Registrar</Text>
+                )}
               </LinearGradient>
             </TouchableOpacity>
           </View>
         </View>
 
-        <TouchableOpacity onPress={() => navigation.navigate("Login")}>
-          <Text style={styles.loginLink}>
-            ¿Ya tienes cuenta?{" "}
-            <Text style={styles.loginLinkHighlight}>Inicia sesión</Text>
-          </Text>
-        </TouchableOpacity>
+               <TouchableOpacity onPress={() => navigation.navigate("Login")}>
+                 <Text style={styles.loginLink}>
+                   ¿Ya tienes cuenta?{" "}
+                   <Text style={styles.loginLinkHighlight}>Inicia sesión</Text>
+                 </Text>
+               </TouchableOpacity>
+
+               {/* Botones de Debug */}
+               <View style={styles.debugContainer}>
+                 <Text style={styles.debugTitle}>🔧 Herramientas de Debug</Text>
+                 
+                 <TouchableOpacity style={styles.debugButton} onPress={handleDebugDatabase}>
+                   <Text style={styles.debugButtonText}>📊 Debug Base de Datos</Text>
+                 </TouchableOpacity>
+                 
+                 <TouchableOpacity style={styles.debugButton} onPress={handleListUsers}>
+                   <Text style={styles.debugButtonText}>👥 Listar Usuarios</Text>
+                 </TouchableOpacity>
+                 
+                 <TouchableOpacity style={styles.debugButton} onPress={handleVerifyUser}>
+                   <Text style={styles.debugButtonText}>🔍 Verificar Usuario</Text>
+                 </TouchableOpacity>
+               </View>
+
       </ScrollView>
     </LinearGradient>
   );
@@ -165,5 +293,40 @@ const styles = StyleSheet.create({
   loginLinkHighlight: {
     color: "#d81b60",
     fontWeight: "bold",
+  },
+  registerButtonDisabled: {
+    opacity: 0.6,
+  },
+  loadingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  debugContainer: {
+    marginTop: 20,
+    padding: 15,
+    backgroundColor: "#f8f9fa",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#e9ecef",
+  },
+  debugTitle: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#495057",
+    marginBottom: 10,
+    textAlign: "center",
+  },
+  debugButton: {
+    backgroundColor: "#6c757d",
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 8,
+    alignItems: "center",
+  },
+  debugButtonText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "600",
   },
 });
