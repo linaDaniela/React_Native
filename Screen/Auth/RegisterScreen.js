@@ -10,67 +10,34 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { registerUser } from "../../src/Services/RegisterService";
-import { testAsyncStorage, debugDatabase } from "../../src/Services/TestService";
-import { debugDatabase as debugDB, listAllUsers, verifyUserExists } from "../../src/Services/DatabaseDebugService";
+import ApiService from "../../src/service/ApiService";
 
 export default function RegisterScreen({ navigation }) {
   const [nombre, setNombre] = useState("");
   const [apellido, setApellido] = useState("");
+  const [cedula, setCedula] = useState("");
+  const [fechaNacimiento, setFechaNacimiento] = useState("");
   const [email, setEmail] = useState("");
   const [telefono, setTelefono] = useState("");
-  const [rol, setRol] = useState("paciente");
+  const [usuario, setUsuario] = useState("");
   const [password, setPassword] = useState("");
+  const [direccion, setDireccion] = useState("");
+  const [epsId, setEpsId] = useState("");
+  const [tipoAfiliacion, setTipoAfiliacion] = useState("Cotizante");
+  const [numeroAfiliacion, setNumeroAfiliacion] = useState("");
+  const [grupoSanguineo, setGrupoSanguineo] = useState("");
+  const [alergias, setAlergias] = useState("");
+  const [medicamentosActuales, setMedicamentosActuales] = useState("");
+  const [contactoEmergenciaNombre, setContactoEmergenciaNombre] = useState("");
+  const [contactoEmergenciaTelefono, setContactoEmergenciaTelefono] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Debug AsyncStorage al cargar el componente
-  React.useEffect(() => {
-    const runDebug = async () => {
-      console.log("RegisterScreen: Ejecutando debug de AsyncStorage...");
-      await testAsyncStorage();
-      await debugDatabase();
-      await debugDB(); // Debug de la base de datos
-    };
-    runDebug();
-  }, []);
-
-  // Funciones de debug
-  const handleDebugDatabase = async () => {
-    console.log("=== DEBUG DE BASE DE DATOS ===");
-    const result = await debugDB();
-    Alert.alert("Debug BD", `Total usuarios: ${result.totalUsers}\nVer consola para detalles`);
-  };
-
-  const handleListUsers = async () => {
-    console.log("=== LISTANDO USUARIOS ===");
-    const result = await listAllUsers();
-    if (result.success) {
-      const userList = result.users.map(user => `${user.name} (${user.email})`).join('\n');
-      Alert.alert("Usuarios en BD", `Total: ${result.totalUsers}\n\n${userList}`);
-    } else {
-      Alert.alert("Error", "No se pudieron listar los usuarios");
-    }
-  };
-
-  const handleVerifyUser = async () => {
-    if (!email) {
-      Alert.alert("Error", "Ingresa un email para verificar");
-      return;
-    }
-    console.log("=== VERIFICANDO USUARIO ===");
-    const result = await verifyUserExists(email);
-    if (result.exists) {
-      Alert.alert("Usuario Encontrado", `✅ ${result.user.name} existe en la BD`);
-    } else {
-      Alert.alert("Usuario No Encontrado", `❌ ${email} no existe en la BD`);
-    }
-  };
 
 
 
   const handleRegister = async () => {
-    if (!nombre || !apellido || !email || !telefono || !password) {
-      Alert.alert("Error", "Todos los campos son obligatorios");
+    if (!nombre || !apellido || !cedula || !fechaNacimiento || !email || !telefono || !usuario || !password) {
+      Alert.alert("Error", "Los campos marcados con * son obligatorios");
       return;
     }
 
@@ -82,33 +49,61 @@ export default function RegisterScreen({ navigation }) {
     setLoading(true);
 
     try {
-      console.log("Registrando usuario:", { nombre, apellido, email, telefono, rol, password });
+      console.log("Registrando paciente:", { 
+        nombre, apellido, cedula, fechaNacimiento, email, telefono, usuario, password,
+        direccion, epsId, tipoAfiliacion, numeroAfiliacion, grupoSanguineo, alergias,
+        medicamentosActuales, contactoEmergenciaNombre, contactoEmergenciaTelefono
+      });
       
-      // Preparar datos del usuario para la base de datos
+      // Preparar datos del paciente para la base de datos
       const userData = {
         nombre: nombre,
         apellido: apellido,
+        cedula: cedula,
+        fecha_nacimiento: fechaNacimiento,
         email: email,
         telefono: telefono,
-        rol: rol,
-        password: password, // En una app real, esto debería estar hasheado
-        name: `${nombre} ${apellido}`
+        usuario: usuario,
+        password: password,
+        direccion: direccion || null,
+        eps_id: epsId || null,
+        tipo_afiliacion: tipoAfiliacion,
+        numero_afiliacion: numeroAfiliacion || null,
+        grupo_sanguineo: grupoSanguineo || null,
+        alergias: alergias || null,
+        medicamentos_actuales: medicamentosActuales || null,
+        contacto_emergencia_nombre: contactoEmergenciaNombre || null,
+        contacto_emergencia_telefono: contactoEmergenciaTelefono || null,
+        rol: 'paciente'
       };
 
       // Registrar en la base de datos
-      const result = await registerUser(userData);
+      const result = await ApiService.registerUser(userData);
       
       if (result.success) {
-        console.log("Usuario registrado exitosamente en BD:", result.user);
+        console.log("Paciente registrado exitosamente:", result.message);
         console.log("Registro exitoso, navegando al login...");
         
         // Limpiar formulario
         setNombre("");
         setApellido("");
+        setCedula("");
+        setFechaNacimiento("");
         setEmail("");
         setTelefono("");
-        setRol("paciente");
+        setUsuario("");
         setPassword("");
+        setDireccion("");
+        setEpsId("");
+        setTipoAfiliacion("Cotizante");
+        setNumeroAfiliacion("");
+        setGrupoSanguineo("");
+        setAlergias("");
+        setMedicamentosActuales("");
+        setContactoEmergenciaNombre("");
+        setContactoEmergenciaTelefono("");
+        
+        Alert.alert("Éxito", "Paciente registrado correctamente");
         
         // Pequeño delay para asegurar que la navegación funcione
         setTimeout(() => {
@@ -120,8 +115,8 @@ export default function RegisterScreen({ navigation }) {
       }
       
     } catch (error) {
-      console.error("Error al registrar usuario:", error);
-      Alert.alert("Error", "Ocurrió un error al registrar el usuario");
+      console.error("Error al registrar paciente:", error);
+      Alert.alert("Error", "Ocurrió un error al registrar el paciente");
     } finally {
       setLoading(false);
     }
@@ -136,21 +131,35 @@ export default function RegisterScreen({ navigation }) {
           <View style={styles.form}>
             <TextInput
               style={styles.input}
-              placeholder="Nombre"
+              placeholder="Nombre *"
               placeholderTextColor="#b78fa2"
               value={nombre}
               onChangeText={setNombre}
             />
             <TextInput
               style={styles.input}
-              placeholder="Apellido"
+              placeholder="Apellido *"
               placeholderTextColor="#b78fa2"
               value={apellido}
               onChangeText={setApellido}
             />
             <TextInput
               style={styles.input}
-              placeholder="Correo electrónico"
+              placeholder="Cédula *"
+              placeholderTextColor="#b78fa2"
+              value={cedula}
+              onChangeText={setCedula}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Fecha de Nacimiento * (YYYY-MM-DD)"
+              placeholderTextColor="#b78fa2"
+              value={fechaNacimiento}
+              onChangeText={setFechaNacimiento}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Correo electrónico *"
               placeholderTextColor="#b78fa2"
               keyboardType="email-address"
               value={email}
@@ -158,7 +167,7 @@ export default function RegisterScreen({ navigation }) {
             />
             <TextInput
               style={styles.input}
-              placeholder="Teléfono"
+              placeholder="Teléfono *"
               placeholderTextColor="#b78fa2"
               keyboardType="phone-pad"
               value={telefono}
@@ -166,14 +175,14 @@ export default function RegisterScreen({ navigation }) {
             />
             <TextInput
               style={styles.input}
-              placeholder="Rol (paciente o medico)"
+              placeholder="Usuario *"
               placeholderTextColor="#b78fa2"
-              value={rol}
-              onChangeText={setRol}
+              value={usuario}
+              onChangeText={setUsuario}
             />
             <TextInput
               style={styles.input}
-              placeholder="Contraseña"
+              placeholder="Contraseña *"
               placeholderTextColor="#b78fa2"
               secureTextEntry
               value={password}
@@ -201,6 +210,117 @@ export default function RegisterScreen({ navigation }) {
               </LinearGradient>
             </TouchableOpacity>
           </View>
+
+          {/* Campos Opcionales */}
+          <View style={styles.optionalSection}>
+            <Text style={styles.sectionTitle}>Información Adicional (Opcional)</Text>
+            
+            <TextInput
+              style={styles.input}
+              placeholder="Dirección"
+              placeholderTextColor="#b78fa2"
+              value={direccion}
+              onChangeText={setDireccion}
+            />
+            
+            <TextInput
+              style={styles.input}
+              placeholder="EPS ID (número)"
+              placeholderTextColor="#b78fa2"
+              keyboardType="numeric"
+              value={epsId}
+              onChangeText={setEpsId}
+            />
+            
+            <View style={styles.pickerContainer}>
+              <Text style={styles.pickerLabel}>Tipo de Afiliación:</Text>
+              <TouchableOpacity
+                style={styles.pickerButton}
+                onPress={() => {
+                  Alert.alert(
+                    "Tipo de Afiliación",
+                    "Selecciona el tipo de afiliación",
+                    [
+                      { text: "Cotizante", onPress: () => setTipoAfiliacion("Cotizante") },
+                      { text: "Beneficiario", onPress: () => setTipoAfiliacion("Beneficiario") }
+                    ]
+                  );
+                }}
+              >
+                <Text style={styles.pickerText}>{tipoAfiliacion}</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <TextInput
+              style={styles.input}
+              placeholder="Número de Afiliación"
+              placeholderTextColor="#b78fa2"
+              value={numeroAfiliacion}
+              onChangeText={setNumeroAfiliacion}
+            />
+            
+            <View style={styles.pickerContainer}>
+              <Text style={styles.pickerLabel}>Grupo Sanguíneo:</Text>
+              <TouchableOpacity
+                style={styles.pickerButton}
+                onPress={() => {
+                  Alert.alert(
+                    "Grupo Sanguíneo",
+                    "Selecciona tu grupo sanguíneo",
+                    [
+                      { text: "A+", onPress: () => setGrupoSanguineo("A+") },
+                      { text: "A-", onPress: () => setGrupoSanguineo("A-") },
+                      { text: "B+", onPress: () => setGrupoSanguineo("B+") },
+                      { text: "B-", onPress: () => setGrupoSanguineo("B-") },
+                      { text: "AB+", onPress: () => setGrupoSanguineo("AB+") },
+                      { text: "AB-", onPress: () => setGrupoSanguineo("AB-") },
+                      { text: "O+", onPress: () => setGrupoSanguineo("O+") },
+                      { text: "O-", onPress: () => setGrupoSanguineo("O-") }
+                    ]
+                  );
+                }}
+              >
+                <Text style={styles.pickerText}>{grupoSanguineo || "Seleccionar"}</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              placeholder="Alergias conocidas"
+              placeholderTextColor="#b78fa2"
+              multiline
+              numberOfLines={3}
+              value={alergias}
+              onChangeText={setAlergias}
+            />
+            
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              placeholder="Medicamentos actuales"
+              placeholderTextColor="#b78fa2"
+              multiline
+              numberOfLines={3}
+              value={medicamentosActuales}
+              onChangeText={setMedicamentosActuales}
+            />
+            
+            <TextInput
+              style={styles.input}
+              placeholder="Contacto de Emergencia - Nombre"
+              placeholderTextColor="#b78fa2"
+              value={contactoEmergenciaNombre}
+              onChangeText={setContactoEmergenciaNombre}
+            />
+            
+            <TextInput
+              style={styles.input}
+              placeholder="Contacto de Emergencia - Teléfono"
+              placeholderTextColor="#b78fa2"
+              keyboardType="phone-pad"
+              value={contactoEmergenciaTelefono}
+              onChangeText={setContactoEmergenciaTelefono}
+            />
+          </View>
         </View>
 
                <TouchableOpacity onPress={() => navigation.navigate("Login")}>
@@ -209,23 +329,6 @@ export default function RegisterScreen({ navigation }) {
                    <Text style={styles.loginLinkHighlight}>Inicia sesión</Text>
                  </Text>
                </TouchableOpacity>
-
-               {/* Botones de Debug */}
-               <View style={styles.debugContainer}>
-                 <Text style={styles.debugTitle}>🔧 Herramientas de Debug</Text>
-                 
-                 <TouchableOpacity style={styles.debugButton} onPress={handleDebugDatabase}>
-                   <Text style={styles.debugButtonText}>📊 Debug Base de Datos</Text>
-                 </TouchableOpacity>
-                 
-                 <TouchableOpacity style={styles.debugButton} onPress={handleListUsers}>
-                   <Text style={styles.debugButtonText}>👥 Listar Usuarios</Text>
-                 </TouchableOpacity>
-                 
-                 <TouchableOpacity style={styles.debugButton} onPress={handleVerifyUser}>
-                   <Text style={styles.debugButtonText}>🔍 Verificar Usuario</Text>
-                 </TouchableOpacity>
-               </View>
 
       </ScrollView>
     </LinearGradient>
@@ -302,31 +405,43 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  debugContainer: {
+  optionalSection: {
     marginTop: 20,
-    padding: 15,
+    padding: 20,
     backgroundColor: "#f8f9fa",
-    borderRadius: 10,
+    borderRadius: 15,
     borderWidth: 1,
     borderColor: "#e9ecef",
   },
-  debugTitle: {
-    fontSize: 14,
+  sectionTitle: {
+    fontSize: 16,
     fontWeight: "bold",
     color: "#495057",
-    marginBottom: 10,
+    marginBottom: 15,
     textAlign: "center",
   },
-  debugButton: {
-    backgroundColor: "#6c757d",
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 8,
-    alignItems: "center",
+  pickerContainer: {
+    marginTop: 15,
   },
-  debugButtonText: {
-    color: "#fff",
-    fontSize: 12,
+  pickerLabel: {
+    fontSize: 14,
     fontWeight: "600",
+    color: "#495057",
+    marginBottom: 8,
+  },
+  pickerButton: {
+    backgroundColor: "#fff0f6",
+    padding: 15,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#f8bbd0",
+  },
+  pickerText: {
+    fontSize: 16,
+    color: "#4a2c3a",
+  },
+  textArea: {
+    height: 80,
+    textAlignVertical: "top",
   },
 });

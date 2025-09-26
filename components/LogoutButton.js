@@ -2,7 +2,7 @@ import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { logoutUser } from '../src/Services/AuthService';
+import { logoutUser } from '../src/service/AuthService';
 
 export default function LogoutButton({ style, textStyle, showIcon = true }) {
   const navigation = useNavigation();

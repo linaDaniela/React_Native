@@ -6,7 +6,7 @@ import CardComponent from "../../components/CardComponent";
 import DirectLogoutButton from "../../components/DirectLogoutButton";
 import { getStoredUser } from "../../src/service/AuthService";
 
-export default function PanelUsuario() {
+export default function PanelAdmin() {
   const navigation = useNavigation();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -32,17 +32,17 @@ export default function PanelUsuario() {
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <View>
-            <Text style={styles.title}>Panel de Paciente</Text>
-            <Text style={styles.subtitle}>Gestiona tu información médica</Text>
+            <Text style={styles.title}>Panel Administrativo</Text>
+            <Text style={styles.subtitle}>Gestión completa del sistema</Text>
           </View>
           <DirectLogoutButton style={styles.logoutButton} navigation={navigation} />
         </View>
       </View>
 
-      {/* Información del Usuario */}
+      {/* Información del Administrador */}
       <View style={styles.userInfoCard}>
         <View style={styles.userAvatar}>
-          <Ionicons name="person" size={40} color="#1976D2" />
+          <Ionicons name="shield-checkmark" size={40} color="#dc3545" />
         </View>
         <View style={styles.userDetails}>
           <Text style={styles.userName}>
@@ -52,119 +52,116 @@ export default function PanelUsuario() {
             {user ? user.email : 'Cargando...'}
           </Text>
           <Text style={styles.userRole}>
-            {user ? (user.role === 'paciente' ? 'Paciente' : user.role) : 'Cargando...'}
+            {user ? (user.role === 'admin' ? 'Administrador' : user.role) : 'Cargando...'}
           </Text>
         </View>
       </View>
 
-      {/* Acciones Principales */}
-      <Text style={styles.sectionTitle}>Acciones Principales</Text>
+      {/* Gestión de Usuarios */}
+      <Text style={styles.sectionTitle}>Gestión de Usuarios</Text>
       <View style={styles.listContainer}>
         <CardComponent
-          title="Mis Citas"
-          description="Ver y gestionar mis citas"
-          icon="calendar-outline"
-          onPress={() => navigation.navigate("MisCitasPaciente")}
+          title="Crear Médico"
+          description="Registrar nuevo médico en el sistema"
+          icon="medical-outline"
+          onPress={() => navigation.navigate("CrearMedico")}
         />
         <CardComponent
-          title="Mi Perfil"
-          description="Actualizar información personal"
-          icon="person-outline"
-          onPress={() => navigation.navigate("MiPerfilPaciente")}
+          title="Crear Administrador"
+          description="Registrar nuevo administrador"
+          icon="person-add-outline"
+          onPress={() => navigation.navigate("CrearAdmin")}
         />
         <CardComponent
-          title="Historial Médico"
-          description="Ver mi historial de consultas"
-          icon="document-text-outline"
-          onPress={() => navigation.navigate("HistorialMedico")}
+          title="Lista de Usuarios"
+          description="Ver todos los usuarios del sistema"
+          icon="people-outline"
+          onPress={() => navigation.navigate("ListaUsuarios")}
+        />
+      </View>
+
+      {/* Gestión del Sistema */}
+      <Text style={styles.sectionTitle}>Gestión del Sistema</Text>
+      <View style={styles.listContainer}>
+        <CardComponent
+          title="Pacientes"
+          description="Gestión completa de pacientes"
+          icon="people-outline"
+          onPress={() => navigation.navigate("PacientesFlow")}
         />
         <CardComponent
           title="Médicos"
-          description="Buscar y contactar médicos"
-          icon="medical-outline"
-          onPress={() => navigation.navigate("BuscarMedicos")}
+          description="Gestión de médicos y especialidades"
+          icon="medkit-outline"
+          onPress={() => navigation.navigate("Medico")}
         />
         <CardComponent
-          title="Recetas"
-          description="Ver mis recetas médicas"
-          icon="receipt-outline"
-          onPress={() => navigation.navigate("MisRecetas")}
-        />
-        <CardComponent
-          title="Emergencias"
-          description="Contacto de emergencia"
-          icon="call-outline"
-          onPress={() => navigation.navigate("Emergencias")}
+          title="Citas"
+          description="Gestión de citas médicas"
+          icon="calendar-outline"
+          onPress={() => navigation.navigate("CitasFlow")}
         />
         <CardComponent
           title="Especialidades"
-          description="Ver especialidades médicas"
+          description="Gestión de especialidades médicas"
           icon="library-outline"
           onPress={() => navigation.navigate("Especialidades")}
         />
         <CardComponent
           title="EPS"
-          description="Información de mi EPS"
+          description="Gestión de EPS y afiliaciones"
           icon="business-outline"
           onPress={() => navigation.navigate("EpsFlow")}
         />
+        <CardComponent
+          title="Consultorios"
+          description="Gestión de consultorios"
+          icon="home-outline"
+          onPress={() => navigation.navigate("Consultorios")}
+        />
       </View>
 
-      {/* Próxima Cita */}
-      <Text style={styles.sectionTitle}>Próxima Cita</Text>
-      <View style={styles.card}>
-        <View style={styles.appointmentHeader}>
-          <Ionicons name="calendar" size={24} color="#1976D2" />
-          <Text style={styles.appointmentTitle}>Consulta General</Text>
+      {/* Estadísticas del Sistema */}
+      <Text style={styles.sectionTitle}>Estadísticas del Sistema</Text>
+      <View style={styles.summaryContainer}>
+        <View style={styles.summaryCard}>
+          <Ionicons name="people-outline" size={28} color="#1976D2" />
+          <Text style={styles.summaryNumber}>1,250</Text>
+          <Text>Pacientes</Text>
         </View>
-        <Text style={styles.appointmentDoctor}>Dr. Carlos Mendoza</Text>
-        <Text style={styles.appointmentDate}>17 Dic 2024 - 10:30 AM</Text>
-        <Text style={styles.appointmentStatus}>Confirmado</Text>
-        <TouchableOpacity style={styles.appointmentButton}>
-          <Text style={styles.appointmentButtonText}>Ver Detalles</Text>
-        </TouchableOpacity>
+        <View style={styles.summaryCard}>
+          <Ionicons name="medical-outline" size={28} color="#198754" />
+          <Text style={styles.summaryNumber}>45</Text>
+          <Text>Médicos</Text>
+        </View>
+        <View style={styles.summaryCard}>
+          <Ionicons name="calendar-outline" size={28} color="#fd7e14" />
+          <Text style={styles.summaryNumber}>3,200</Text>
+          <Text>Citas Totales</Text>
+        </View>
+        <View style={styles.summaryCard}>
+          <Ionicons name="business-outline" size={28} color="#6f42c1" />
+          <Text style={styles.summaryNumber}>5</Text>
+          <Text>EPS</Text>
+        </View>
       </View>
+
 
       {/* Acciones Rápidas */}
       <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
       <View style={styles.quickActions}>
         <TouchableOpacity style={styles.quickActionButton}>
-          <Ionicons name="calendar-outline" size={24} color="#1976D2" />
-          <Text style={styles.quickActionText}>Nueva Cita</Text>
+          <Ionicons name="person-add-outline" size={24} color="#198754" />
+          <Text style={styles.quickActionText}>Nuevo Médico</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.quickActionButton}>
-          <Ionicons name="search-outline" size={24} color="#198754" />
-          <Text style={styles.quickActionText}>Buscar Médico</Text>
+          <Ionicons name="people-outline" size={24} color="#1976D2" />
+          <Text style={styles.quickActionText}>Ver Pacientes</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.quickActionButton}>
-          <Ionicons name="call-outline" size={24} color="#dc3545" />
-          <Text style={styles.quickActionText}>Emergencia</Text>
+          <Ionicons name="calendar-outline" size={24} color="#fd7e14" />
+          <Text style={styles.quickActionText}>Ver Citas</Text>
         </TouchableOpacity>
-      </View>
-
-      {/* Resumen de Salud */}
-      <Text style={styles.sectionTitle}>Resumen de Salud</Text>
-      <View style={styles.summaryContainer}>
-        <View style={styles.summaryCard}>
-          <Ionicons name="heart-outline" size={28} color="#dc3545" />
-          <Text style={styles.summaryNumber}>120/80</Text>
-          <Text>Presión Arterial</Text>
-        </View>
-        <View style={styles.summaryCard}>
-          <Ionicons name="thermometer-outline" size={28} color="#fd7e14" />
-          <Text style={styles.summaryNumber}>36.5°C</Text>
-          <Text>Temperatura</Text>
-        </View>
-        <View style={styles.summaryCard}>
-          <Ionicons name="fitness-outline" size={28} color="#198754" />
-          <Text style={styles.summaryNumber}>70 kg</Text>
-          <Text>Peso</Text>
-        </View>
-        <View style={styles.summaryCard}>
-          <Ionicons name="pulse-outline" size={28} color="#6f42c1" />
-          <Text style={styles.summaryNumber}>72 bpm</Text>
-          <Text>Frecuencia Cardíaca</Text>
-        </View>
       </View>
     </ScrollView>
   );
@@ -177,7 +174,7 @@ const styles = StyleSheet.create({
     padding: 15,
   },
   header: {
-    backgroundColor: "#1976D2",
+    backgroundColor: "#dc3545",
     padding: 20,
     borderRadius: 12,
     marginBottom: 20,
@@ -221,7 +218,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: "#E3F2FD",
+    backgroundColor: "#FFEBEE",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 15,
@@ -242,7 +239,7 @@ const styles = StyleSheet.create({
   },
   userRole: {
     fontSize: 12,
-    color: "#1976D2",
+    color: "#dc3545",
     fontWeight: "600",
   },
   sectionTitle: {
@@ -253,55 +250,6 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     marginBottom: 20,
-  },
-  card: {
-    backgroundColor: "#fff",
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 20,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-  },
-  appointmentHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  appointmentTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-    marginLeft: 10,
-  },
-  appointmentDoctor: {
-    fontSize: 16,
-    color: "#666",
-    marginBottom: 5,
-  },
-  appointmentDate: {
-    fontSize: 14,
-    color: "#1976D2",
-    fontWeight: "600",
-    marginBottom: 5,
-  },
-  appointmentStatus: {
-    fontSize: 12,
-    color: "#198754",
-    fontWeight: "bold",
-    marginBottom: 15,
-  },
-  appointmentButton: {
-    backgroundColor: "#1976D2",
-    padding: 12,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  appointmentButtonText: {
-    color: "#fff",
-    fontWeight: "bold",
   },
   summaryContainer: {
     flexDirection: "row",

@@ -1,37 +1,62 @@
-// Configuración específica para móvil
 import { Platform } from 'react-native';
 
-export const MOBILE_CONFIG = {
-  // URLs de API
-  API_BASE_URL: Platform.OS === 'web' 
-    ? 'http://localhost:8000/api' 
-    : 'http://172.20.10.8:8000/api',
+const config = {
+  // URL de API basada en tu configuración
+  API_BASE_URL: 'http://172.20.10.8:8000/api',
+  
+  // Configuración de autenticación
+  AUTH_CONFIG: {
+    TOKEN_KEY: 'userToken',
+    USER_KEY: 'userData',
+    REFRESH_TOKEN_KEY: 'refresh_token'
+  },
+  
+  // Tipos de usuario
+  USER_TYPES: {
+    ADMINISTRADOR: 'administrador',
+    MEDICO: 'medico',
+    PACIENTE: 'paciente'
+  },
+  
+  // Estados de citas
+  CITAS_ESTADOS: {
+    PENDIENTE: 'pendiente',
+    CONFIRMADA: 'confirmada',
+    CANCELADA: 'cancelada',
+    REALIZADA: 'realizada'
+  },
+  
+  // Configuración de la app
+  APP_CONFIG: {
+    NAME: 'Sistema de Citas Médicas',
+    VERSION: '2.0.0',
+    DEBUG: __DEV__
+  },
   
   // Configuración de almacenamiento
   STORAGE_TYPE: Platform.OS === 'web' ? 'localStorage' : 'AsyncStorage',
   
-  // Configuración de debug
-  DEBUG_MODE: __DEV__,
-  
   // Configuración de red
-  NETWORK_TIMEOUT: 10000, // 10 segundos
-  
-  // Configuración de autenticación
-  TOKEN_KEY: 'userToken',
-  USER_DATA_KEY: 'userData',
+  NETWORK_TIMEOUT: 30000, // 30 segundos
   
   // Configuración de demo
   DEMO_CREDENTIALS: [
     { 
-      email: "medico@eps.com", 
-      password: "medico123", 
-      role: "medico", 
-      name: "Dr. Carlos Rodríguez" 
+      usuario: "admin", 
+      password: "admin123", 
+      tipo_usuario: "administrador", 
+      name: "Super Administrador" 
     },
     { 
-      email: "paciente@eps.com", 
+      usuario: "wmorales", 
+      password: "medico123", 
+      tipo_usuario: "medico", 
+      name: "Dr. Wylmer Morales" 
+    },
+    { 
+      usuario: "jperez", 
       password: "paciente123", 
-      role: "paciente", 
+      tipo_usuario: "paciente", 
       name: "Juan Pérez" 
     }
   ],
@@ -45,4 +70,5 @@ export const MOBILE_CONFIG = {
   }
 };
 
-export default MOBILE_CONFIG;
+export default config;
+export const { API_BASE_URL, AUTH_CONFIG, USER_TYPES, CITAS_ESTADOS, APP_CONFIG } = config;

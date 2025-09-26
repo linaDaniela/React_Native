@@ -1,12 +1,30 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { ScrollView, View, StyleSheet, Text, TouchableOpacity } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import CardComponent from "../../components/CardComponent";
 import DirectLogoutButton from "../../components/DirectLogoutButton";
+import { getStoredUser } from "../../src/service/AuthService";
 
 export default function PanelMedico() {
   const navigation = useNavigation();
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadUserData();
+  }, []);
+
+  const loadUserData = async () => {
+    try {
+      const { user: userData } = await getStoredUser();
+      setUser(userData);
+    } catch (error) {
+      console.error('Error al cargar datos del usuario:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -17,7 +35,7 @@ export default function PanelMedico() {
             <Text style={styles.title}>Panel Médico</Text>
             <Text style={styles.subtitle}>Gestiona tu práctica médica</Text>
           </View>
-          <DirectLogoutButton style={styles.logoutButton} />
+          <DirectLogoutButton style={styles.logoutButton} navigation={navigation} />
         </View>
       </View>
 
@@ -27,9 +45,15 @@ export default function PanelMedico() {
           <Ionicons name="medical" size={40} color="#198754" />
         </View>
         <View style={styles.userDetails}>
-          <Text style={styles.userName}>Dr. Carlos Rodríguez</Text>
-          <Text style={styles.userEmail}>medico@eps.com</Text>
-          <Text style={styles.userRole}>Cardiólogo</Text>
+          <Text style={styles.userName}>
+            {user ? `Dr. ${user.nombre || user.name || 'Usuario'} ${user.apellido || ''}` : 'Cargando...'}
+          </Text>
+          <Text style={styles.userEmail}>
+            {user ? user.email : 'Cargando...'}
+          </Text>
+          <Text style={styles.userRole}>
+            {user ? (user.role === 'medico' ? 'Médico' : user.role) : 'Cargando...'}
+          </Text>
         </View>
       </View>
 

@@ -10,8 +10,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { loginUser } from "../../src/Services/AuthService";
-import { listAllUsers, verifyUserExists } from "../../src/Services/DatabaseDebugService";
+import { loginUser } from "../../src/service/AuthService";
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState("");
@@ -22,6 +21,17 @@ export default function LoginScreen({ navigation }) {
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
+  };
+
+  // Función para detectar el tipo de usuario basado en el email
+  const detectUserType = (email) => {
+    if (email.includes('@sistema.com')) {
+      return 'administrador';
+    } else if (email.includes('@hospital.com')) {
+      return 'medico';
+    } else {
+      return 'paciente';
+    }
   };
 
   const handleLogin = async () => {
@@ -44,12 +54,25 @@ export default function LoginScreen({ navigation }) {
     setLoading(true);
 
     try {
-      console.log("Intentando login con:", email);
-      const result = await loginUser(email, password);
+      // Detectar tipo de usuario automáticamente
+      const tipo_usuario = detectUserType(email);
+      console.log("Intentando login con:", email, "tipo:", tipo_usuario);
+      
+      const result = await loginUser(email, password, tipo_usuario);
       
       if (result.success) {
-        console.log("Login exitoso, token guardado. AppNavegacion detectará el cambio...");
-        // No navegar manualmente, dejar que AppNavegacion detecte el token
+        console.log("Login exitoso, navegando al panel del usuario...");
+        Alert.alert("¡Éxito!", `Bienvenido ${result.user?.name || result.user?.nombre || email}`, [
+          {
+            text: "Continuar",
+            onPress: () => {
+              // Navegar al PanelSelector que detectará el tipo de usuario
+              navigation.navigate('InicioStack', { 
+                screen: 'PanelSelector' 
+              });
+            }
+          }
+        ]);
       } else {
         console.error("Error en login:", result.message);
         Alert.alert("Error", result.message || "Error al iniciar sesión");
@@ -62,31 +85,6 @@ export default function LoginScreen({ navigation }) {
     }
   };
 
-  // Funciones de debug
-  const handleListUsers = async () => {
-    console.log("=== LISTANDO USUARIOS DESDE LOGIN ===");
-    const result = await listAllUsers();
-    if (result.success) {
-      const userList = result.users.map(user => `${user.name} (${user.email})`).join('\n');
-      Alert.alert("Usuarios en BD", `Total: ${result.totalUsers}\n\n${userList}`);
-    } else {
-      Alert.alert("Error", "No se pudieron listar los usuarios");
-    }
-  };
-
-  const handleVerifyUser = async () => {
-    if (!email) {
-      Alert.alert("Error", "Ingresa un email para verificar");
-      return;
-    }
-    console.log("=== VERIFICANDO USUARIO DESDE LOGIN ===");
-    const result = await verifyUserExists(email);
-    if (result.exists) {
-      Alert.alert("Usuario Encontrado", `✅ ${result.user.name} existe en la BD`);
-    } else {
-      Alert.alert("Usuario No Encontrado", `❌ ${email} no existe en la BD`);
-    }
-  };
 
   return (
     <LinearGradient colors={["#fce4ec", "#fff1f8"]} style={{ flex: 1 }}>
@@ -158,43 +156,42 @@ export default function LoginScreen({ navigation }) {
 
         {/* Credenciales de demo */}
         <View style={styles.demoContainer}>
-          <Text style={styles.demoTitle}>🔧 Modo Demo - Credenciales de prueba:</Text>
+          <Text style={styles.demoTitle}>🔧 Credenciales de prueba:</Text>
           <TouchableOpacity
             style={styles.demoCredential}
             onPress={() => {
-              setEmail("medico@eps.com");
+              setEmail("admin@sistema.com");
+              setPassword("admin123");
+            }}
+          >
+            <Text style={styles.demoText}>
+              <Text style={styles.demoRole}>admin:</Text> admin@sistema.com / admin123
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.demoCredential}
+            onPress={() => {
+              setEmail("Wilmer.Morales@hospital.com");
               setPassword("medico123");
             }}
           >
             <Text style={styles.demoText}>
-              <Text style={styles.demoRole}>médico:</Text> medico@eps.com / medico123
+              <Text style={styles.demoRole}>médico:</Text> Wilmer.Morales@hospital.com / medico123
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.demoCredential}
             onPress={() => {
-              setEmail("paciente@eps.com");
+              setEmail("juan.pineda@email.com");
               setPassword("paciente123");
             }}
           >
             <Text style={styles.demoText}>
-              <Text style={styles.demoRole}>paciente:</Text> paciente@eps.com / paciente123
+              <Text style={styles.demoRole}>paciente:</Text> juan.pineda@email.com / paciente123
             </Text>
           </TouchableOpacity>
         </View>
 
-        {/* Botones de Debug */}
-        <View style={styles.debugContainer}>
-          <Text style={styles.debugTitle}>🔧 Herramientas de Debug</Text>
-          
-          <TouchableOpacity style={styles.debugButton} onPress={handleListUsers}>
-            <Text style={styles.debugButtonText}>👥 Listar Usuarios</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.debugButton} onPress={handleVerifyUser}>
-            <Text style={styles.debugButtonText}>🔍 Verificar Usuario</Text>
-          </TouchableOpacity>
-        </View>
 
       </ScrollView>
     </LinearGradient>
@@ -317,32 +314,5 @@ const styles = StyleSheet.create({
   demoRole: {
     fontWeight: "bold",
     color: "#495057",
-  },
-  debugContainer: {
-    marginTop: 20,
-    padding: 15,
-    backgroundColor: "#f8f9fa",
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#e9ecef",
-  },
-  debugTitle: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#495057",
-    marginBottom: 10,
-    textAlign: "center",
-  },
-  debugButton: {
-    backgroundColor: "#6c757d",
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 8,
-    alignItems: "center",
-  },
-  debugButtonText: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "600",
   },
 });

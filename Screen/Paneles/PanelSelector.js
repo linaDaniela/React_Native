@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { getStoredUser } from '../../src/Services/AuthService';
+import { getStoredUser } from '../../src/service/AuthService';
 import PanelUsuario from './PanelUsuario';
 import PanelMedico from './PanelMedico';
+import PanelAdmin from './PanelAdmin';
 
 export default function PanelSelector() {
   const [user, setUser] = useState(null);
@@ -47,6 +48,10 @@ export default function PanelSelector() {
     console.log("PanelSelector: Rol del usuario:", role);
 
     switch (role) {
+      case 'admin':
+      case 'administrador':
+        console.log("PanelSelector: Mostrando panel de administrador");
+        return <PanelAdmin />;
       case 'medico':
       case 'doctor':
         console.log("PanelSelector: Mostrando panel de médico");

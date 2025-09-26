@@ -3,7 +3,7 @@ import { ScrollView, View, StyleSheet, Text, TouchableOpacity } from "react-nati
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import CardComponent from "../../components/CardComponent";
-import { getStoredUser } from "../../src/Services/AuthService";
+import { getStoredUser } from "../../src/service/AuthService";
 
 export default function Inicio() {
   const navigation = useNavigation();

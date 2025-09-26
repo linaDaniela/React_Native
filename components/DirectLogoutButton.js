@@ -1,25 +1,55 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, Platform } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, Platform, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export default function DirectLogoutButton({ style, textStyle, showIcon = true }) {
+export default function DirectLogoutButton({ style, textStyle, showIcon = true, navigation }) {
   const handleLogout = async () => {
     try {
       console.log("Iniciando logout directo...");
       
-      // Limpiar datos del usuario
-      await AsyncStorage.removeItem("userToken");
-      await AsyncStorage.removeItem("userData");
-      console.log("Logout exitoso - datos limpiados");
-      
-      // Para web, recargar la página
-      if (Platform.OS === 'web') {
-        console.log("Recargando página...");
-        window.location.reload();
-      }
+      // Mostrar confirmación
+      Alert.alert(
+        "Cerrar Sesión",
+        "¿Estás seguro de que quieres cerrar sesión?",
+        [
+          {
+            text: "Cancelar",
+            style: "cancel"
+          },
+          {
+            text: "Cerrar Sesión",
+            style: "destructive",
+            onPress: async () => {
+              try {
+                // Limpiar datos del usuario
+                await AsyncStorage.removeItem("userToken");
+                await AsyncStorage.removeItem("userData");
+                console.log("Logout exitoso - datos limpiados");
+                
+                // Navegar al inicio
+                if (navigation) {
+                  navigation.navigate('InicioStack', { 
+                    screen: 'InicioPantalla' 
+                  });
+                }
+                
+                // Para web, recargar la página
+                if (Platform.OS === 'web') {
+                  console.log("Recargando página...");
+                  window.location.reload();
+                }
+              } catch (error) {
+                console.error('Error al cerrar sesión:', error);
+                Alert.alert("Error", "Hubo un problema al cerrar sesión");
+              }
+            }
+          }
+        ]
+      );
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
+      Alert.alert("Error", "Hubo un problema al cerrar sesión");
     }
   };
 

@@ -14,6 +14,9 @@ import HistorialesMedicos from "../../Screen/Medico/HistorialesMedicos";
 // Pantallas específicas para pacientes
 import MisCitasPaciente from "../../Screen/Paciente/MisCitas";
 import MiPerfilPaciente from "../../Screen/Paciente/MiPerfil";
+// Pantallas específicas para administradores
+import CrearMedico from "../../Screen/Admin/CrearMedico";
+import ListaUsuarios from "../../Screen/Admin/ListaUsuarios";
 import PacientesStack from "./PacientesStack";
 import CitasStack from "./CitasStack";
 import MedicoStack from "./MedicoStack";
@@ -133,6 +136,19 @@ export default function InicioStack(){
             <Stack.Screen
             name="MiPerfilPaciente"
             component={MiPerfilPaciente}
+            options={{ headerShown: false}}
+        />
+
+            {/* Pantallas específicas para administradores */}
+            <Stack.Screen
+            name="CrearMedico"
+            component={CrearMedico}
+            options={{ headerShown: false}}
+        />
+
+            <Stack.Screen
+            name="ListaUsuarios"
+            component={ListaUsuarios}
             options={{ headerShown: false}}
         />
         </Stack.Navigator>
