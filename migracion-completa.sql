@@ -346,3 +346,4 @@ COMMIT;
 -- - Estructura completa compatible con Laravel Sanctum
 -- =====================================================
 
+

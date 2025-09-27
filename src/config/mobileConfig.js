@@ -2,7 +2,7 @@ import { Platform } from 'react-native';
 
 const config = {
   // URL de API basada en tu configuración
-  API_BASE_URL: 'http://172.20.10.8:8000/api',
+  API_BASE_URL: 'http://10.2.232.243:8000/api',
   
   // Configuración de autenticación
   AUTH_CONFIG: {
