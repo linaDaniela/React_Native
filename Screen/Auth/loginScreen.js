@@ -24,89 +24,81 @@ export default function LoginScreen({ navigation }) {
 
   // Función para detectar el tipo de usuario basado en el email
   const detectUserType = (email) => {
-    console.log("🔍 Detectando tipo de usuario para email:", email);
-    
-    // Lista de emails/usuarios de médicos conocidos
-    const medicosEmails = [
-      'Wilmer.Morales@hospital.com',
-      'wmorales',
-      'asaavedra',
-      'medico@hospital.com',
-      '@hospital.com'
-    ];
-    
-    // Lista de emails/usuarios de administradores conocidos
-    const adminEmails = [
-      '@sistema.com',
-      'admin@',
-      'wilmer@gmail.com',
-      'maria.gonzalez@sistema.com',
-      'powbs@gmail.com'
-    ];
-    
-    // Detectar administradores
-    if (adminEmails.some(adminEmail => email.includes(adminEmail))) {
-      console.log("✅ Detectado como administrador");
-      return 'administrador';
-    } 
-    // Detectar médicos
-    else if (medicosEmails.some(medicoEmail => email.includes(medicoEmail))) {
-      console.log("✅ Detectado como médico");
-      return 'medico';
-    } 
-    // Por defecto, paciente
-    else {
-      console.log("✅ Detectado como paciente");
-      return 'paciente';
-    }
-  };
+  console.log("🔍 Detectando tipo para:", email);
+  
+  const emailLower = email.toLowerCase();
+  
+  // MÉDICOS - verificar primero
+  const medicoPatterns = [
+    'medico', 'doctor', '@hospital.com', 'wmorales', 
+    'wilmer.morales', 'asaavedra', 'cardiologo', 'pediatra'
+  ];
+  
+  if (medicoPatterns.some(p => emailLower.includes(p))) {
+    console.log("✅ MÉDICO");
+    return 'medico';
+  }
+  
+  // ADMINISTRADORES
+  const adminPatterns = [
+    'admin', '@sistema.com', 'wilmer@gmail.com', 
+    'maria.gonzalez', 'powbs@gmail.com'
+  ];
+  
+  if (adminPatterns.some(p => emailLower.includes(p))) {
+    console.log("✅ ADMINISTRADOR");
+    return 'administrador';
+  }
+  
+  console.log("✅ PACIENTE");
+  return 'paciente';
+};
 
   const handleLogin = async () => {
-    // Validaciones básicas
-    if (!email || !password) {
-      Alert.alert("Error", "Por favor completa todos los campos");
-      return;
-    }
+  // Validaciones básicas
+  if (!email || !password) {
+    Alert.alert("Error", "Por favor completa todos los campos");
+    return;
+  }
 
-    if (!validateEmail(email)) {
-      Alert.alert("Error", "Por favor ingresa un email válido");
-      return;
-    }
+  // QUITAR O COMENTAR ESTA VALIDACIÓN
+  // if (!validateEmail(email)) {
+  //   Alert.alert("Error", "Por favor ingresa un email válido");
+  //   return;
+  // }
 
-    setLoading(true);
+  setLoading(true);
 
-    try {
-      console.log("🔐 Intentando login con ApiService...");
-      console.log("📧 Email:", email);
-      console.log("🔑 Password:", password);
+  try {
+    console.log("🔐 Intentando login con ApiService...");
+    console.log("📧 Email:", email);
+    console.log("🔑 Password:", password);
+    
+    const tipo_usuario = detectUserType(email);
+    console.log("👤 Tipo de usuario detectado:", tipo_usuario);
+    
+    const result = await ApiService.loginUser(email, password, tipo_usuario);
+    
+    if (result.success) {
+      console.log("✅ Login exitoso:", result.user.name);
+      console.log("✅ Rol del usuario:", result.user.role);
       
-      const tipo_usuario = detectUserType(email);
-      console.log("👤 Tipo de usuario detectado:", tipo_usuario);
-      
-      const result = await ApiService.loginUser(email, password, tipo_usuario);
-      
-      if (result.success) {
-        console.log("✅ Login exitoso:", result.user.name);
-        console.log("✅ Rol del usuario:", result.user.role);
-        
-        // Forzar recarga de la navegación para que detecte el nuevo token
-        if (global.forceNavigationReload) {
-          global.forceNavigationReload();
-        }
-        
-        // No mostrar alerta, redirigir directamente
-        console.log("Login exitoso, redirigiendo automáticamente...");
-      } else {
-        console.error("❌ Error en login:", result.message);
-        Alert.alert("Error", result.message);
+      if (global.forceNavigationReload) {
+        global.forceNavigationReload();
       }
-    } catch (error) {
-      console.error("❌ Error inesperado:", error);
-      Alert.alert("Error", "Ocurrió un error inesperado. Intenta nuevamente.");
-    } finally {
-      setLoading(false);
+      
+      console.log("Login exitoso, redirigiendo automáticamente...");
+    } else {
+      console.error("❌ Error en login:", result.message);
+      Alert.alert("Error", result.message);
     }
-  };
+  } catch (error) {
+    console.error("❌ Error inesperado:", error);
+    Alert.alert("Error", "Ocurrió un error inesperado. Intenta nuevamente.");
+  } finally {
+    setLoading(false);
+  }
+};
 
 
   return (

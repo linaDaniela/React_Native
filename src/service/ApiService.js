@@ -124,11 +124,6 @@ class ApiService {
             role: tipo_usuario
           }));
           
-          console.log("💾 Usuario guardado en AsyncStorage:", {
-            ...response.data.user,
-            role: tipo_usuario
-          });
-          
           return {
             success: true,
             token: response.data.token,
@@ -139,17 +134,12 @@ class ApiService {
             message: "Login exitoso"
           };
         } else {
-          console.log("❌ Login falló con Laravel:", response.data);
           return {
             success: false,
             message: response.data.message || "Error en el servidor"
           };
         }
       } catch (error) {
-        console.log("❌ Error con Laravel:");
-        console.log("📊 Status:", error.response?.status);
-        console.log("📋 Data:", error.response?.data);
-        console.log("💬 Message:", error.message);
         
         // Fallback a login local para cualquier error
         console.log("🔄 Usando login local como fallback...");
@@ -166,101 +156,96 @@ class ApiService {
   }
 
   static async simpleLocalLogin(email, password) {
-    try {
-      console.log("🔍 simpleLocalLogin - Email:", email, "Password:", password);
+  try {
+    
+    // Credenciales con case-insensitive matching
+    const validCredentials = {
+      // Administradores
+      "admin@sistema.com": { password: "admin123", role: "administrador", name: "Super Administrador" },
+      "maria.gonzalez@sistema.com": { password: "admin123", role: "administrador", name: "María González" },
+      "powbs@gmail.com": { password: "admin123", role: "administrador", name: "Nuevo Prueba" },
+      "wilmer@gmail.com": { password: "admin123", role: "administrador", name: "Wilmer Morales" },
       
-      // Credenciales simplificadas y directas - MÉDICOS GARANTIZADOS
-      const validCredentials = {
-        // Administradores
-        "admin@sistema.com": { password: "admin123", role: "administrador", name: "Super Administrador" },
-        "maria.gonzalez@sistema.com": { password: "admin123", role: "administrador", name: "María González" },
-        "powbs@gmail.com": { password: "admin123", role: "administrador", name: "Nuevo Prueba" },
-        "wilmer@gmail.com": { password: "admin123", role: "administrador", name: "Wilmer Morales" },
-        
-        // MÉDICOS - TODAS LAS OPCIONES POSIBLES
-        "medico@hospital.com": { password: "medico123", role: "medico", name: "Dr. Médico" },
-        "Wilmer.Morales@hospital.com": { password: "medico123", role: "medico", name: "Dr. Wylmer Morales" },
-        "wmorales": { password: "medico123", role: "medico", name: "Dr. Wylmer Morales" },
-        "asaavedra": { password: "medico123", role: "medico", name: "Dr. Saavedra" },
-        "doctor@hospital.com": { password: "medico123", role: "medico", name: "Dr. Doctor" },
-        "cardiologo@hospital.com": { password: "medico123", role: "medico", name: "Dr. Cardiólogo" },
-        "pediatra@hospital.com": { password: "medico123", role: "medico", name: "Dr. Pediatra" },
-        "dermatologo@hospital.com": { password: "medico123", role: "medico", name: "Dr. Dermatólogo" },
-        
-        // MÉDICOS ADICIONALES - CUALQUIER COSA QUE CONTENGA "medico" o "doctor"
-        "medico": { password: "medico123", role: "medico", name: "Dr. Médico Genérico" },
-        "doctor": { password: "medico123", role: "medico", name: "Dr. Doctor Genérico" },
-        
-        // Pacientes
-        "paciente@email.com": { password: "paciente123", role: "paciente", name: "Paciente Demo" },
-        "juan.pineda@email.com": { password: "paciente123", role: "paciente", name: "Juan Pineda" }
+     // MÉDICOS
+    "medico@hospital.com": { password: "medico123", role: "medico", name: "Dr. Médico" },
+    "wilmer.morales@hospital.com": { password: "medico123", role: "medico", name: "Dr. Wylmer Morales" },
+    "wmorales": { password: "medico123", role: "medico", name: "Dr. Wylmer Morales" },
+    "asaavedra": { password: "medico123", role: "medico", name: "Dr. Saavedra" },
+    "doctor@hospital.com": { password: "medico123", role: "medico", name: "Dr. Doctor" },
+    "cardiologo@hospital.com": { password: "medico123", role: "medico", name: "Dr. Cardiólogo" },
+    "pediatra@hospital.com": { password: "medico123", role: "medico", name: "Dr. Pediatra" },
+    "dermatologo@hospital.com": { password: "medico123", role: "medico", name: "Dr. Dermatólogo" },
+    "juanpis@gmail.com": { password: "juanpis123", role: "medico", name: "Dr. Juanpis González" },
+
+// Pacientes
+      "paciente@email.com": { password: "paciente123", role: "paciente", name: "Paciente Demo" },
+      "juan.pineda@email.com": { password: "paciente123", role: "paciente", name: "Juan Pineda" }
+    };
+    
+    // Buscar credenciales (case-insensitive)
+    const emailLower = email.toLowerCase();
+    let userCreds = null;
+    let foundEmail = null;
+    
+    for (const [key, value] of Object.entries(validCredentials)) {
+      if (key.toLowerCase() === emailLower) {
+        userCreds = value;
+        foundEmail = key;
+        break;
+      }
+    }
+    
+    // Si no se encuentra, buscar patrones para médicos
+    if (!userCreds && (emailLower.includes('medico') || emailLower.includes('doctor') || emailLower.includes('hospital'))) {
+      console.log("🩺 Detectado patrón médico, usando credenciales genéricas");
+      userCreds = { password: "medico123", role: "medico", name: "Dr. " + email.split('@')[0] };
+      foundEmail = email;
+    }
+    
+    if (userCreds && userCreds.password === password) {
+      console.log("✅ Credenciales válidas encontradas");
+      
+      const token = `local_token_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      const user = {
+        id: Math.floor(Math.random() * 1000) + 1,
+        email: email,
+        nombre: userCreds.name.split(' ')[0] || userCreds.name,
+        apellido: userCreds.name.split(' ').slice(1).join(' ') || '',
+        name: userCreds.name,
+        role: userCreds.role,
+        telefono: '300-000-0000',
+        usuario: email
       };
       
-      console.log("🔍 Buscando credenciales para:", email);
+      await AsyncStorage.setItem("userToken", token);
+      await AsyncStorage.setItem("userData", JSON.stringify(user));
       
-      // Buscar credenciales exactas primero
-      let userCreds = validCredentials[email];
+      console.log("✅ Usuario guardado en AsyncStorage:", user);
+      console.log("✅ Token generado:", token);
       
-      // Si no encuentra exacto, buscar por patrones para médicos
-      if (!userCreds && (email.includes('medico') || email.includes('doctor') || email.includes('hospital'))) {
-        console.log("🩺 Detectado patrón médico, usando credenciales genéricas");
-        userCreds = { password: "medico123", role: "medico", name: "Dr. " + email };
-      }
-      
-      // Si aún no encuentra, usar credenciales por defecto según el tipo
-      if (!userCreds) {
-        if (email.includes('admin') || email.includes('sistema')) {
-          userCreds = { password: "admin123", role: "administrador", name: "Administrador" };
-        } else {
-          userCreds = { password: "paciente123", role: "paciente", name: "Paciente" };
-        }
-      }
-      
-      if (userCreds && userCreds.password === password) {
-        console.log("✅ Credenciales válidas encontradas");
-        
-        // Generar un token simple pero funcional
-        const token = `local_token_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        
-        const user = {
-          id: 1,
-          email: email,
-          nombre: userCreds.name.split(' ')[0] || userCreds.name,
-          apellido: userCreds.name.split(' ')[1] || '',
-          name: userCreds.name,
-          role: userCreds.role,
-          telefono: '300-000-0000',
-          usuario: email
-        };
-        
-        await AsyncStorage.setItem("userToken", token);
-        await AsyncStorage.setItem("userData", JSON.stringify(user));
-        
-        console.log("✅ Usuario guardado en AsyncStorage:", user);
-        console.log("✅ Token generado:", token);
-        
-        return {
-          success: true,
-          token: token,
-          user: user,
-          message: "Login exitoso"
-        };
-      }
-      
-      console.log("❌ Credenciales no válidas");
       return {
-        success: false,
-        message: "Usuario no encontrado o inactivo"
-      };
-      
-    } catch (error) {
-      console.error("❌ Error en simpleLocalLogin:", error);
-      return {
-        success: false,
-        message: "Error al verificar credenciales"
+        success: true,
+        token: token,
+        user: user,
+        message: "Login exitoso"
       };
     }
+    
+    console.log("❌ Credenciales no válidas");
+    return {
+      success: false,
+      message: "Usuario no encontrado o contraseña incorrecta"
+    };
+    
+  } catch (error) {
+    console.error("❌ Error en simpleLocalLogin:", error);
+    return {
+      success: false,
+      message: "Error al verificar credenciales"
+    };
   }
+}
 
   static async localLogin(email, password) {
     try {
