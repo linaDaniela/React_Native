@@ -15,6 +15,10 @@ import EpsStack from '../Stack/EpsStack';
 import EspecialidadStack from '../Stack/EspecialidadStack';
 import MedicoStack from '../Stack/MedicoStack';
 import ConsultoriosStack from '../Stack/ConsultoriosStack';
+import MiAgenda from '../../Screen/Medico/MiAgenda';
+import MisPacientes from '../../Screen/Medico/MisPacientes';
+import Consultas from '../../Screen/Medico/Consultas';
+import HistorialesMedicos from '../../Screen/Medico/HistorialesMedicos';
 
 const Stack = createNativeStackNavigator();
 
@@ -31,6 +35,29 @@ export default function NavegacionPrincipal() {
                 component={InicioStack}
                 options={{ headerShown: false }}
             />
+            
+            <Stack.Screen
+                name="MiAgenda"
+                component={MiAgenda}
+                options={{ headerShown: false }}
+            />
+            <Stack.Screen
+                name="MisPacientes"
+                component={MisPacientes}
+                options={{ headerShown: false }}
+            />
+            <Stack.Screen
+                name="Consultas"
+                component={Consultas}
+                options={{ headerShown: false }}
+            />
+            <Stack.Screen
+                name="HistorialesMedicos"
+                component={HistorialesMedicos}
+                options={{ headerShown: false }}
+            />
+
+
             <Stack.Screen
                 name="CrearMedico"
                 component={CrearMedico}
@@ -71,6 +98,7 @@ export default function NavegacionPrincipal() {
                 component={RegisterScreen}
                 options={{ headerShown: false }}
             />
+
             <Stack.Screen
                 name="PacientesFlow"
                 component={PacientesStack}

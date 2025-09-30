@@ -79,22 +79,10 @@ export default function PanelMedico() {
           onPress={() => navigation.navigate("Consultas")}
         />
         <CardComponent
-          title="Recetas"
-          description="Emitir recetas médicas"
-          icon="receipt-outline"
-          onPress={() => navigation.navigate("EmitirRecetas")}
-        />
-        <CardComponent
           title="Historiales"
           description="Ver historiales médicos"
           icon="document-text-outline"
           onPress={() => navigation.navigate("HistorialesMedicos")}
-        />
-        <CardComponent
-          title="Reportes"
-          description="Generar reportes médicos"
-          icon="bar-chart-outline"
-          onPress={() => navigation.navigate("ReportesMedicos")}
         />
       </View>
 
@@ -170,11 +158,6 @@ export default function PanelMedico() {
           <Ionicons name="time-outline" size={28} color="#fd7e14" />
           <Text style={styles.summaryNumber}>3</Text>
           <Text>Citas Pendientes</Text>
-        </View>
-        <View style={styles.summaryCard}>
-          <Ionicons name="document-outline" size={28} color="#6f42c1" />
-          <Text style={styles.summaryNumber}>12</Text>
-          <Text>Recetas Emitidas</Text>
         </View>
       </View>
 

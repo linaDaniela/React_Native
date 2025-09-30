@@ -47,16 +47,6 @@ export default function EmitirRecetas() {
 
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Emitir Recetas</Text>
-        <TouchableOpacity onPress={generatePrescription}>
-          <Ionicons name="checkmark" size={24} color="#fff" />
-        </TouchableOpacity>
-      </View>
 
       {/* Selección de Paciente */}
       <View style={styles.sectionContainer}>

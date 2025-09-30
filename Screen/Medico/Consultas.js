@@ -147,11 +147,6 @@ export default function Consultas() {
             <Text style={styles.statNumber}>1</Text>
             <Text style={styles.statLabel}>Completadas</Text>
           </View>
-          <View style={styles.statCard}>
-            <Ionicons name="receipt-outline" size={24} color="#fd7e14" />
-            <Text style={styles.statNumber}>2</Text>
-            <Text style={styles.statLabel}>Recetas</Text>
-          </View>
         </View>
       </View>
     </ScrollView>

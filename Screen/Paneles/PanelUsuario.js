@@ -85,12 +85,6 @@ export default function PanelUsuario() {
           onPress={() => navigation.navigate("BuscarMedicos")}
         />
         <CardComponent
-          title="Recetas"
-          description="Ver mis recetas médicas"
-          icon="receipt-outline"
-          onPress={() => navigation.navigate("MisRecetas")}
-        />
-        <CardComponent
           title="Emergencias"
           description="Contacto de emergencia"
           icon="call-outline"
