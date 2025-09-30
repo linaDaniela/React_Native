@@ -1,18 +1,29 @@
 import React, { useState, useEffect } from "react";
-import { ScrollView, View, StyleSheet, Text, TouchableOpacity } from "react-native";
+import { ScrollView, View, StyleSheet, Text, TouchableOpacity, ActivityIndicator } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import CardComponent from "../../components/CardComponent";
 import DirectLogoutButton from "../../components/DirectLogoutButton";
 import { getStoredUser } from "../../src/service/AuthService";
+import EstadisticasService from "../../src/service/EstadisticasService";
 
 export default function PanelAdmin() {
   const navigation = useNavigation();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [estadisticas, setEstadisticas] = useState({
+    total_pacientes: 0,
+    total_medicos: 0,
+    total_citas: 0,
+    total_eps: 0,
+    total_consultorios: 0,
+    total_especialidades: 0
+  });
+  const [cargandoEstadisticas, setCargandoEstadisticas] = useState(true);
 
   useEffect(() => {
     loadUserData();
+    loadEstadisticas();
   }, []);
 
   const loadUserData = async () => {
@@ -23,6 +34,27 @@ export default function PanelAdmin() {
       console.error('Error al cargar datos del usuario:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadEstadisticas = async () => {
+    try {
+      console.log('📊 Cargando estadísticas del sistema...');
+      setCargandoEstadisticas(true);
+      
+      const result = await EstadisticasService.obtenerEstadisticasGenerales();
+      
+      if (result.success) {
+        console.log('✅ Estadísticas cargadas:', result.data);
+        setEstadisticas(result.data);
+      } else {
+        console.log('⚠️ Error al cargar estadísticas:', result.message);
+        // Mantener valores por defecto en caso de error
+      }
+    } catch (error) {
+      console.error('❌ Error inesperado al cargar estadísticas:', error);
+    } finally {
+      setCargandoEstadisticas(false);
     }
   };
 
@@ -73,10 +105,33 @@ export default function PanelAdmin() {
           onPress={() => navigation.navigate("CrearAdmin")}
         />
         <CardComponent
-          title="Lista de Usuarios"
-          description="Ver todos los usuarios del sistema"
-          icon="people-outline"
-          onPress={() => navigation.navigate("ListaUsuarios")}
+          title="Crear Pacientes"
+          description="Registrar nuevo paciente en el sistema"
+          icon="person-add-outline"
+          onPress={() => navigation.navigate("CrearPaciente")}
+        />
+      </View>
+
+      {/* Gestión de Entidades del Sistema */}
+      <Text style={styles.sectionTitle}>Gestión de Entidades</Text>
+      <View style={styles.listContainer}>
+        <CardComponent
+          title="Crear EPS"
+          description="Registrar nueva EPS en el sistema"
+          icon="business-outline"
+          onPress={() => navigation.navigate("CrearEps")}
+        />
+        <CardComponent
+          title="Crear Especialidad"
+          description="Registrar nueva especialidad médica"
+          icon="library-outline"
+          onPress={() => navigation.navigate("CrearEspecialidad")}
+        />
+        <CardComponent
+          title="Crear Consultorio"
+          description="Registrar nuevo consultorio"
+          icon="home-outline"
+          onPress={() => navigation.navigate("CrearConsultorio")}
         />
       </View>
 
@@ -122,27 +177,74 @@ export default function PanelAdmin() {
       </View>
 
       {/* Estadísticas del Sistema */}
-      <Text style={styles.sectionTitle}>Estadísticas del Sistema</Text>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Estadísticas del Sistema</Text>
+        <TouchableOpacity 
+          style={styles.refreshButton}
+          onPress={loadEstadisticas}
+          disabled={cargandoEstadisticas}
+        >
+          <Ionicons 
+            name="refresh" 
+            size={20} 
+            color={cargandoEstadisticas ? "#ccc" : "#1976D2"} 
+          />
+        </TouchableOpacity>
+      </View>
       <View style={styles.summaryContainer}>
         <View style={styles.summaryCard}>
           <Ionicons name="people-outline" size={28} color="#1976D2" />
-          <Text style={styles.summaryNumber}>1,250</Text>
+          {cargandoEstadisticas ? (
+            <ActivityIndicator size="small" color="#1976D2" />
+          ) : (
+            <Text style={styles.summaryNumber}>{estadisticas.total_pacientes}</Text>
+          )}
           <Text>Pacientes</Text>
         </View>
         <View style={styles.summaryCard}>
           <Ionicons name="medical-outline" size={28} color="#198754" />
-          <Text style={styles.summaryNumber}>45</Text>
+          {cargandoEstadisticas ? (
+            <ActivityIndicator size="small" color="#198754" />
+          ) : (
+            <Text style={styles.summaryNumber}>{estadisticas.total_medicos}</Text>
+          )}
           <Text>Médicos</Text>
         </View>
         <View style={styles.summaryCard}>
           <Ionicons name="calendar-outline" size={28} color="#fd7e14" />
-          <Text style={styles.summaryNumber}>3,200</Text>
+          {cargandoEstadisticas ? (
+            <ActivityIndicator size="small" color="#fd7e14" />
+          ) : (
+            <Text style={styles.summaryNumber}>{estadisticas.total_citas}</Text>
+          )}
           <Text>Citas Totales</Text>
         </View>
         <View style={styles.summaryCard}>
           <Ionicons name="business-outline" size={28} color="#6f42c1" />
-          <Text style={styles.summaryNumber}>5</Text>
+          {cargandoEstadisticas ? (
+            <ActivityIndicator size="small" color="#6f42c1" />
+          ) : (
+            <Text style={styles.summaryNumber}>{estadisticas.total_eps}</Text>
+          )}
           <Text>EPS</Text>
+        </View>
+        <View style={styles.summaryCard}>
+          <Ionicons name="home-outline" size={28} color="#20c997" />
+          {cargandoEstadisticas ? (
+            <ActivityIndicator size="small" color="#20c997" />
+          ) : (
+            <Text style={styles.summaryNumber}>{estadisticas.total_consultorios}</Text>
+          )}
+          <Text>Consultorios</Text>
+        </View>
+        <View style={styles.summaryCard}>
+          <Ionicons name="library-outline" size={28} color="#e83e8c" />
+          {cargandoEstadisticas ? (
+            <ActivityIndicator size="small" color="#e83e8c" />
+          ) : (
+            <Text style={styles.summaryNumber}>{estadisticas.total_especialidades}</Text>
+          )}
+          <Text>Especialidades</Text>
         </View>
       </View>
 
@@ -150,15 +252,24 @@ export default function PanelAdmin() {
       {/* Acciones Rápidas */}
       <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
       <View style={styles.quickActions}>
-        <TouchableOpacity style={styles.quickActionButton}>
+        <TouchableOpacity 
+          style={styles.quickActionButton}
+          onPress={() => navigation.navigate("CrearMedico")}
+        >
           <Ionicons name="person-add-outline" size={24} color="#198754" />
           <Text style={styles.quickActionText}>Nuevo Médico</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.quickActionButton}>
+        <TouchableOpacity 
+          style={styles.quickActionButton}
+          onPress={() => navigation.navigate("PacientesFlow")}
+        >
           <Ionicons name="people-outline" size={24} color="#1976D2" />
           <Text style={styles.quickActionText}>Ver Pacientes</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.quickActionButton}>
+        <TouchableOpacity 
+          style={styles.quickActionButton}
+          onPress={() => navigation.navigate("CitasFlow")}
+        >
           <Ionicons name="calendar-outline" size={24} color="#fd7e14" />
           <Text style={styles.quickActionText}>Ver Citas</Text>
         </TouchableOpacity>
@@ -242,11 +353,23 @@ const styles = StyleSheet.create({
     color: "#dc3545",
     fontWeight: "600",
   },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginVertical: 15,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    marginVertical: 15,
     color: "#333",
+  },
+  refreshButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: "#f8f9fa",
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
   },
   listContainer: {
     marginBottom: 20,

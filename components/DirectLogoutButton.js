@@ -27,18 +27,31 @@ export default function DirectLogoutButton({ style, textStyle, showIcon = true, 
                 await AsyncStorage.removeItem("userData");
                 console.log("Logout exitoso - datos limpiados");
                 
-                // Navegar al inicio
-                if (navigation) {
-                  navigation.navigate('InicioStack', { 
-                    screen: 'InicioPantalla' 
-                  });
+                // Forzar recarga inmediata del estado de navegación
+                console.log("Token eliminado, forzando recarga del estado");
+                
+                // Llamar a la función global para forzar recarga
+                if (global.forceNavigationReload) {
+                  global.forceNavigationReload();
                 }
                 
-                // Para web, recargar la página
-                if (Platform.OS === 'web') {
-                  console.log("Recargando página...");
-                  window.location.reload();
-                }
+                // Mostrar mensaje de éxito y cerrar inmediatamente
+                Alert.alert(
+                  "Sesión Cerrada",
+                  "Has cerrado sesión correctamente",
+                  [{ 
+                    text: "OK",
+                    onPress: () => {
+                      // Forzar recarga de la aplicación
+                      if (Platform.OS === 'web') {
+                        window.location.reload();
+                      } else {
+                        // Para móvil, el sistema ya detectó la falta de token
+                        console.log("Redirigiendo automáticamente...");
+                      }
+                    }
+                  }]
+                );
               } catch (error) {
                 console.error('Error al cerrar sesión:', error);
                 Alert.alert("Error", "Hubo un problema al cerrar sesión");

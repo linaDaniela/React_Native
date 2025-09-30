@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import ConsultoriosService from '../../src/service/ConsultoriosService';
+import MedicosService from '../../src/service/MedicosService';
 
 export default function EditarMedico() {
   const navigation = useNavigation();
@@ -35,6 +37,8 @@ export default function EditarMedico() {
 
   // Estados para modales
   const [showEspecialidadesModal, setShowEspecialidadesModal] = useState(false);
+  const [showConsultoriosModal, setShowConsultoriosModal] = useState(false);
+  const [consultoriosList, setConsultoriosList] = useState([]);
 
   // Datos de ejemplo
   const especialidades = [
@@ -54,18 +58,54 @@ export default function EditarMedico() {
   ];
 
   useEffect(() => {
+    loadConsultorios();
+  }, []);
+
+  const loadConsultorios = async () => {
+    try {
+      console.log('Cargando consultorios disponibles...');
+      const result = await ConsultoriosService.obtenerConsultorios();
+      
+      if (result.success && result.data && result.data.length > 0) {
+        console.log('✅ Consultorios cargados:', result.data.length);
+        setConsultoriosList(result.data);
+      } else {
+        console.log('❌ No se pudieron cargar los consultorios:', result.message);
+        // Mostrar consultorios de ejemplo si no se pueden cargar
+        setConsultoriosList([
+          { id: 1, nombre: 'Consultorio 101', ubicacion: 'Piso 1 - Ala Norte' },
+          { id: 2, nombre: 'Consultorio 205', ubicacion: 'Piso 2 - Ala Sur' },
+          { id: 3, nombre: 'Consultorio 310', ubicacion: 'Piso 3 - Ala Norte' },
+          { id: 4, nombre: 'Consultorio 415', ubicacion: 'Piso 4 - Ala Sur' },
+          { id: 5, nombre: 'Consultorio 520', ubicacion: 'Piso 5 - Ala Norte' }
+        ]);
+      }
+    } catch (error) {
+      console.error('Error cargando consultorios:', error);
+      // Mostrar consultorios de ejemplo en caso de error
+      setConsultoriosList([
+        { id: 1, nombre: 'Consultorio 101', ubicacion: 'Piso 1 - Ala Norte' },
+        { id: 2, nombre: 'Consultorio 205', ubicacion: 'Piso 2 - Ala Sur' },
+        { id: 3, nombre: 'Consultorio 310', ubicacion: 'Piso 3 - Ala Norte' },
+        { id: 4, nombre: 'Consultorio 415', ubicacion: 'Piso 4 - Ala Sur' },
+        { id: 5, nombre: 'Consultorio 520', ubicacion: 'Piso 5 - Ala Norte' }
+      ]);
+    }
+  };
+
+  useEffect(() => {
     if (medico) {
       setFormData({
         nombre: medico.nombre || '',
         apellido: medico.apellido || '',
-        especialidad: medico.especialidad || '',
+        especialidad: medico.especialidad?.nombre || medico.especialidad || '',
         cedula: medico.cedula || '',
         telefono: medico.telefono || '',
         email: medico.email || '',
         direccion: medico.direccion || '',
         horario: medico.horario || '',
-        experiencia: medico.experiencia || '',
-        consultorio: medico.consultorio || '',
+        experiencia: medico.experiencia_anos || medico.experiencia || '',
+        consultorio: medico.consultorio_id || medico.consultorio || '',
         observaciones: medico.observaciones || '',
       });
     }
@@ -78,7 +118,7 @@ export default function EditarMedico() {
     }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     // Validaciones
     if (!formData.nombre.trim()) {
       Alert.alert('Error', 'El nombre es requerido');
@@ -112,17 +152,46 @@ export default function EditarMedico() {
       return;
     }
 
-    // Simular guardado
-    Alert.alert(
-      'Éxito',
-      'Información del médico actualizada correctamente',
-      [
-        {
-          text: 'OK',
-          onPress: () => navigation.goBack(),
-        },
-      ]
-    );
+    try {
+      const medicoData = {
+        nombre: formData.nombre,
+        apellido: formData.apellido,
+        especialidad: formData.especialidad,
+        cedula: formData.cedula,
+        telefono: formData.telefono,
+        email: formData.email,
+        direccion: formData.direccion,
+        horario: formData.horario,
+        experiencia_anos: formData.experiencia,
+        consultorio: formData.consultorio,
+        observaciones: formData.observaciones,
+      };
+
+      console.log('Actualizando médico:', medico.id, 'con datos:', medicoData);
+      
+      // Llamada real al API para actualizar
+      const result = await MedicosService.actualizarMedico(medico.id, medicoData);
+      
+      if (result.success) {
+        console.log('✅ Médico actualizado exitosamente');
+        Alert.alert(
+          'Éxito',
+          'Información del médico actualizada correctamente en la base de datos',
+          [
+            {
+              text: 'OK',
+              onPress: () => navigation.goBack(),
+            },
+          ]
+        );
+      } else {
+        console.log('❌ Error al actualizar médico:', result.message);
+        Alert.alert('Error', result.message || 'No se pudo actualizar el médico');
+      }
+    } catch (error) {
+      console.error('❌ Error inesperado al actualizar médico:', error);
+      Alert.alert('Error', 'Error de conexión. No se pudo actualizar el médico.');
+    }
   };
 
   const handleCancel = () => {
@@ -155,17 +224,54 @@ export default function EditarMedico() {
     </TouchableOpacity>
   );
 
-  const renderHorarioItem = ({ item }) => (
+  const renderConsultorioItem = ({ item }) => (
     <TouchableOpacity
       style={styles.modalItem}
       onPress={() => {
-        handleInputChange('horario', item);
-        setShowHorariosModal(false);
+        handleInputChange('consultorio', item.nombre);
+        setShowConsultoriosModal(false);
       }}
     >
-      <Text style={styles.modalItemTitle}>{item}</Text>
+      <Text style={styles.modalItemTitle}>{item.nombre}</Text>
+      <Text style={styles.modalItemSubtitle}>{item.ubicacion}</Text>
     </TouchableOpacity>
   );
+
+  const handleDelete = () => {
+    Alert.alert(
+      'Confirmar eliminación',
+      '¿Estás seguro de que deseas eliminar este médico?',
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+        },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const result = await MedicosService.eliminarMedico(medico.id);
+              if (result.success) {
+                Alert.alert('Éxito', 'Médico eliminado correctamente', [
+                  {
+                    text: 'OK',
+                    onPress: () => navigation.goBack(),
+                  },
+                ]);
+              } else {
+                Alert.alert('Error', result.message);
+              }
+            } catch (error) {
+              console.error('Error al eliminar médico:', error);
+              Alert.alert('Error', 'No se pudo eliminar el médico');
+            }
+          },
+        },
+      ]
+    );
+  };
+
 
   return (
     <View style={styles.container}>
@@ -249,12 +355,15 @@ export default function EditarMedico() {
 
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>Consultorio</Text>
-            <TextInput
-              style={styles.textInput}
-              value={formData.consultorio}
-              onChangeText={(value) => handleInputChange('consultorio', value)}
-              placeholder="Número o nombre del consultorio"
-            />
+            <TouchableOpacity
+              style={styles.selectorInput}
+              onPress={() => setShowConsultoriosModal(true)}
+            >
+              <Text style={[styles.selectorText, !formData.consultorio && styles.placeholderText]}>
+                {formData.consultorio || 'Seleccionar consultorio'}
+              </Text>
+              <Ionicons name="chevron-down" size={20} color="#666" />
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -363,6 +472,30 @@ export default function EditarMedico() {
               data={especialidades}
               renderItem={renderEspecialidadItem}
               keyExtractor={(item) => item}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal de Consultorios */}
+      <Modal
+        visible={showConsultoriosModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowConsultoriosModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Seleccionar Consultorio</Text>
+              <TouchableOpacity onPress={() => setShowConsultoriosModal(false)}>
+                <Ionicons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={consultoriosList}
+              renderItem={renderConsultorioItem}
+              keyExtractor={(item) => item.id.toString()}
             />
           </View>
         </View>
@@ -528,5 +661,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
     fontWeight: '500',
+  },
+  modalItemSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 2,
   },
 });

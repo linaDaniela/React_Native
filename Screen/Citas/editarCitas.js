@@ -12,6 +12,10 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import CitasService from '../../src/service/CitasService';
+import MedicosService from '../../src/service/MedicosService';
+import EspecialidadesService from '../../src/service/EspecialidadesService';
+import PacientesService from '../../src/service/PacientesService';
 
 export default function EditarCitas() {
   const navigation = useNavigation();
@@ -28,12 +32,18 @@ export default function EditarCitas() {
     estado: 'Programada',
     motivo: '',
     observaciones: '',
+    paciente_id: null,
+    medico_id: null,
+    especialidad_id: null,
   });
 
   // Estados para modales
   const [showMedicosModal, setShowMedicosModal] = useState(false);
   const [showEspecialidadesModal, setShowEspecialidadesModal] = useState(false);
   const [showEstadosModal, setShowEstadosModal] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [medicosList, setMedicosList] = useState([]);
+  const [especialidadesList, setEspecialidadesList] = useState([]);
 
   // Datos de ejemplo
   const medicos = [
@@ -55,28 +65,80 @@ export default function EditarCitas() {
   const estados = ['Programada', 'Completada', 'Cancelada', 'Reprogramada'];
 
   useEffect(() => {
+    loadInitialData();
+  }, []);
+
+  useEffect(() => {
     if (cita) {
       setFormData({
-        paciente: cita.paciente || '',
-        medico: cita.medico || '',
-        especialidad: cita.especialidad || '',
-        fecha: cita.fecha || '',
-        hora: cita.hora || '',
+        paciente: cita.paciente?.nombre || cita.paciente_nombre || cita.paciente || '',
+        medico: cita.medico?.nombre || cita.medico_nombre || cita.medico || '',
+        especialidad: cita.especialidad?.nombre || cita.especialidad_nombre || cita.especialidad || '',
+        fecha: cita.fecha_cita || cita.fecha || '',
+        hora: cita.hora_cita || cita.hora || '',
         estado: cita.estado || 'Programada',
-        motivo: cita.motivo || '',
+        motivo: cita.motivo_consulta || cita.motivo || '',
         observaciones: cita.observaciones || '',
+        paciente_id: cita.paciente_id || null,
+        medico_id: cita.medico_id || null,
+        especialidad_id: cita.especialidad_id || null,
       });
     }
   }, [cita]);
 
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value,
-    }));
+  const loadInitialData = async () => {
+    try {
+      // Cargar médicos
+      const medicosResult = await MedicosService.obtenerMedicos();
+      if (medicosResult.success && medicosResult.data) {
+        setMedicosList(medicosResult.data);
+      } else {
+        setMedicosList(medicos);
+      }
+
+      // Cargar especialidades
+      const especialidadesResult = await EspecialidadesService.obtenerEspecialidades();
+      if (especialidadesResult.success && especialidadesResult.data) {
+        setEspecialidadesList(especialidadesResult.data);
+      } else {
+        setEspecialidadesList(especialidades);
+      }
+    } catch (error) {
+      console.error('Error cargando datos iniciales:', error);
+      setMedicosList(medicos);
+      setEspecialidadesList(especialidades);
+    }
   };
 
-  const handleSave = () => {
+  const handleInputChange = (field, value) => {
+    // Formatear automáticamente la hora
+    if (field === 'hora') {
+      // Remover caracteres no numéricos excepto ':'
+      let cleanValue = value.replace(/[^0-9:]/g, '');
+      
+      // Si el usuario está escribiendo números, agregar ':' automáticamente
+      if (cleanValue.length === 2 && !cleanValue.includes(':')) {
+        cleanValue = cleanValue + ':';
+      }
+      
+      // Limitar a formato HH:MM
+      if (cleanValue.length > 5) {
+        cleanValue = cleanValue.substring(0, 5);
+      }
+      
+      setFormData(prev => ({
+        ...prev,
+        [field]: cleanValue,
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [field]: value,
+      }));
+    }
+  };
+
+  const handleSave = async () => {
     // Validaciones
     if (!formData.paciente.trim()) {
       Alert.alert('Error', 'El nombre del paciente es requerido');
@@ -95,17 +157,175 @@ export default function EditarCitas() {
       return;
     }
 
-    // Simular guardado
-    Alert.alert(
-      'Éxito',
-      'Cita actualizada correctamente',
-      [
-        {
-          text: 'OK',
-          onPress: () => navigation.goBack(),
-        },
-      ]
-    );
+    // Validar formato de hora
+    const horaRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    if (!horaRegex.test(formData.hora)) {
+      Alert.alert('Error', 'La hora debe estar en formato HH:MM (ej: 14:30)');
+      return;
+    }
+
+    setLoading(true);
+    
+    try {
+      // Usar IDs del formulario o de la cita original
+      let pacienteId = formData.paciente_id || cita.paciente_id;
+      let medicoId = formData.medico_id || cita.medico_id;
+      let especialidadId = formData.especialidad_id || cita.especialidad_id;
+
+      // Si no tenemos los IDs, intentar encontrarlos por nombre
+      if (!pacienteId && formData.paciente) {
+        // Buscar paciente por nombre usando el servicio
+        try {
+          const pacientesResult = await PacientesService.buscarPacientes(formData.paciente);
+          if (pacientesResult.success && pacientesResult.data && pacientesResult.data.length > 0) {
+            // Tomar el primer paciente que coincida
+            pacienteId = pacientesResult.data[0].id;
+            console.log('✅ Paciente encontrado por nombre:', formData.paciente, 'ID:', pacienteId);
+          } else {
+            console.log('⚠️ No se encontró paciente con nombre:', formData.paciente);
+          }
+        } catch (error) {
+          console.error('Error buscando paciente:', error);
+        }
+      }
+
+      if (!medicoId && formData.medico) {
+        // Buscar médico por nombre
+        const medicoSeleccionado = medicosList.find(m => m.nombre === formData.medico);
+        if (medicoSeleccionado) {
+          medicoId = medicoSeleccionado.id;
+          especialidadId = medicoSeleccionado.especialidad_id;
+        }
+      }
+
+      if (!especialidadId && formData.especialidad) {
+        // Buscar especialidad por nombre
+        const especialidadSeleccionada = especialidadesList.find(e => 
+          (e.nombre || e) === formData.especialidad
+        );
+        if (especialidadSeleccionada) {
+          especialidadId = especialidadSeleccionada.id || especialidadSeleccionada;
+        }
+      }
+
+      const citaData = {
+        paciente_id: pacienteId,
+        medico_id: medicoId,
+        especialidad_id: especialidadId,
+        fecha_cita: formData.fecha,
+        hora_cita: formData.hora,
+        estado: formData.estado,
+        motivo_consulta: formData.motivo,
+        observaciones: formData.observaciones,
+        // Mantener nombres para compatibilidad
+        paciente_nombre: formData.paciente,
+        medico_nombre: formData.medico,
+        especialidad_nombre: formData.especialidad,
+      };
+
+      // Verificar campos específicos
+      console.log('=== VERIFICACIÓN DE CAMPOS ===');
+      console.log('Observaciones:', formData.observaciones);
+      console.log('Motivo:', formData.motivo);
+      console.log('Estado:', formData.estado);
+      console.log('Fecha:', formData.fecha);
+      console.log('Hora:', formData.hora);
+
+      console.log('=== DEBUGGING EDICIÓN DE CITA ===');
+      console.log('ID de cita:', cita.id);
+      console.log('Datos del formulario:', formData);
+      console.log('Datos a enviar:', citaData);
+      console.log('IDs encontrados - Paciente:', pacienteId, 'Médico:', medicoId, 'Especialidad:', especialidadId);
+      
+      // Validar que tenemos los IDs necesarios
+      if (!pacienteId) {
+        Alert.alert('Error', 'No se pudo identificar el paciente. Por favor, verifique el nombre.');
+        setLoading(false);
+        return;
+      }
+      
+      if (!medicoId) {
+        Alert.alert('Error', 'No se pudo identificar el médico. Por favor, seleccione un médico válido.');
+        setLoading(false);
+        return;
+      }
+      
+      // Crear objeto solo con campos que han cambiado
+      const camposActualizar = {};
+      
+      // Solo agregar campos que han cambiado realmente
+      if (formData.estado !== cita.estado) {
+        camposActualizar.estado = formData.estado;
+        console.log('✅ Estado cambiado:', cita.estado, '->', formData.estado);
+      }
+      
+      if (formData.fecha !== (cita.fecha_cita || cita.fecha)) {
+        camposActualizar.fecha_cita = formData.fecha;
+        console.log('✅ Fecha cambiada:', cita.fecha_cita || cita.fecha, '->', formData.fecha);
+      }
+      
+      if (formData.hora !== (cita.hora_cita || cita.hora)) {
+        camposActualizar.hora_cita = formData.hora;
+        console.log('✅ Hora cambiada:', cita.hora_cita || cita.hora, '->', formData.hora);
+      }
+      
+      if (formData.motivo !== (cita.motivo_consulta || cita.motivo)) {
+        camposActualizar.motivo_consulta = formData.motivo;
+        console.log('✅ Motivo cambiado:', cita.motivo_consulta || cita.motivo, '->', formData.motivo);
+      }
+      
+      if (formData.observaciones !== cita.observaciones) {
+        camposActualizar.observaciones = formData.observaciones;
+        console.log('✅ Observaciones cambiadas:', cita.observaciones, '->', formData.observaciones);
+      }
+      
+      // Solo cambiar médico si realmente cambió
+      if (medicoId && medicoId !== cita.medico_id) {
+        camposActualizar.medico_id = medicoId;
+        if (especialidadId) {
+          camposActualizar.especialidad_id = especialidadId;
+        }
+        console.log('✅ Médico cambiado:', cita.medico_id, '->', medicoId);
+      }
+
+      console.log('=== CAMPOS A ACTUALIZAR ===');
+      console.log('Solo campos modificados:', camposActualizar);
+      console.log('Cantidad de campos:', Object.keys(camposActualizar).length);
+
+      // Verificar que hay campos para actualizar
+      if (Object.keys(camposActualizar).length === 0) {
+        Alert.alert('Información', 'No se detectaron cambios para guardar.');
+        setLoading(false);
+        return;
+      }
+
+      // Llamada real al API para actualizar
+      console.log('Enviando petición PUT a /citas/' + cita.id);
+      const result = await CitasService.actualizarCita(cita.id, camposActualizar);
+      console.log('Respuesta del servidor:', result);
+      
+      if (result.success) {
+        console.log('✅ Cita actualizada exitosamente');
+        Alert.alert(
+          'Éxito',
+          'Cita actualizada correctamente en la base de datos',
+          [
+            {
+              text: 'OK',
+              onPress: () => navigation.goBack(),
+            },
+          ]
+        );
+      } else {
+        console.log('❌ Error al actualizar cita:', result.message);
+        Alert.alert('Error', result.message || 'No se pudo actualizar la cita');
+      }
+    } catch (error) {
+      console.error('❌ Error inesperado al actualizar cita:', error);
+      Alert.alert('Error', 'Error de conexión. No se pudo actualizar la cita.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCancel = () => {
@@ -131,13 +351,21 @@ export default function EditarCitas() {
       style={styles.modalItem}
       onPress={() => {
         handleInputChange('medico', item.nombre);
-        handleInputChange('especialidad', item.especialidad);
+        handleInputChange('especialidad', item.especialidad?.nombre || item.especialidad);
+        // Guardar también el ID del médico para uso posterior
+        setFormData(prev => ({
+          ...prev,
+          medico_id: item.id,
+          especialidad_id: item.especialidad_id
+        }));
         setShowMedicosModal(false);
       }}
     >
       <View>
         <Text style={styles.modalItemTitle}>{item.nombre}</Text>
-        <Text style={styles.modalItemSubtitle}>{item.especialidad}</Text>
+        <Text style={styles.modalItemSubtitle}>
+          {item.especialidad?.nombre || item.especialidad || 'Sin especialidad'}
+        </Text>
       </View>
     </TouchableOpacity>
   );
@@ -146,11 +374,11 @@ export default function EditarCitas() {
     <TouchableOpacity
       style={styles.modalItem}
       onPress={() => {
-        handleInputChange('especialidad', item);
+        handleInputChange('especialidad', item.nombre || item);
         setShowEspecialidadesModal(false);
       }}
     >
-      <Text style={styles.modalItemTitle}>{item}</Text>
+      <Text style={styles.modalItemTitle}>{item.nombre || item}</Text>
     </TouchableOpacity>
   );
 
@@ -248,7 +476,8 @@ export default function EditarCitas() {
                 value={formData.hora}
                 onChangeText={(value) => handleInputChange('hora', value)}
                 placeholder="HH:MM"
-                keyboardType="numeric"
+                keyboardType="default"
+                maxLength={5}
               />
             </View>
           </View>
@@ -303,8 +532,14 @@ export default function EditarCitas() {
             <Text style={styles.cancelButtonText}>Cancelar</Text>
           </TouchableOpacity>
           
-          <TouchableOpacity style={styles.saveButtonLarge} onPress={handleSave}>
-            <Text style={styles.saveButtonText}>Guardar Cambios</Text>
+          <TouchableOpacity 
+            style={[styles.saveButtonLarge, loading && styles.saveButtonDisabled]} 
+            onPress={handleSave}
+            disabled={loading}
+          >
+            <Text style={styles.saveButtonText}>
+              {loading ? 'Guardando...' : 'Guardar Cambios'}
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -325,9 +560,9 @@ export default function EditarCitas() {
               </TouchableOpacity>
             </View>
             <FlatList
-              data={medicos}
+              data={medicosList}
               renderItem={renderMedicoItem}
-              keyExtractor={(item) => item.id}
+              keyExtractor={(item) => item.id.toString()}
             />
           </View>
         </View>
@@ -349,9 +584,9 @@ export default function EditarCitas() {
               </TouchableOpacity>
             </View>
             <FlatList
-              data={especialidades}
+              data={especialidadesList}
               renderItem={renderEspecialidadItem}
-              keyExtractor={(item) => item}
+              keyExtractor={(item) => (item.id || item).toString()}
             />
           </View>
         </View>
@@ -507,6 +742,9 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  saveButtonDisabled: {
+    backgroundColor: '#ccc',
   },
   modalOverlay: {
     flex: 1,

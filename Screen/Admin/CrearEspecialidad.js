@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -9,30 +9,17 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import EpsService from '../../src/service/EpsService';
+import { useNavigation } from '@react-navigation/native';
+import EspecialidadesService from '../../src/service/EspecialidadesService';
 
-export default function EditarEps() {
+export default function CrearEspecialidad() {
   const navigation = useNavigation();
-  const route = useRoute();
-  const { eps } = route.params || {};
-  
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     nombre: '',
-    nit: '',
-    observaciones: '',
+    descripcion: '',
+    estado: 'Activa',
   });
-
-  useEffect(() => {
-    if (eps) {
-      setFormData({
-        nombre: eps.nombre || '',
-        nit: eps.nit || '',
-        observaciones: eps.observaciones || '',
-      });
-    }
-  }, [eps]);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -43,42 +30,37 @@ export default function EditarEps() {
 
   const validateForm = () => {
     if (!formData.nombre.trim()) {
-      Alert.alert('Error', 'El nombre de la EPS es requerido');
+      Alert.alert('Error', 'El nombre de la especialidad es requerido');
       return false;
     }
-    if (!formData.nit.trim()) {
-      Alert.alert('Error', 'El NIT es requerido');
+    if (!formData.descripcion.trim()) {
+      Alert.alert('Error', 'La descripción es requerida');
       return false;
     }
     return true;
   };
 
-  const handleActualizarEps = async () => {
-    if (!validateForm()) {
-      return;
-    }
+  const handleCrearEspecialidad = async () => {
+    if (!validateForm()) return;
 
     setLoading(true);
     
     try {
-      // Preparar datos para enviar al servidor
-      const epsData = {
+      const especialidadData = {
         nombre: formData.nombre.trim(),
-        nit: formData.nit.trim(),
-        observaciones: formData.observaciones.trim() || null,
+        descripcion: formData.descripcion.trim(),
+        estado: formData.estado,
       };
 
-      console.log('=== ACTUALIZANDO EPS ===');
-      console.log('ID de la EPS:', eps.id);
-      console.log('Datos a enviar:', epsData);
-
-      const result = await EpsService.actualizarEps(eps.id, epsData);
+      console.log('Creando especialidad:', especialidadData);
+      
+      const result = await EspecialidadesService.crearEspecialidad(especialidadData);
       
       if (result.success) {
-        console.log('✅ EPS actualizada exitosamente');
+        console.log('✅ Especialidad creada exitosamente');
         Alert.alert(
           'Éxito',
-          'EPS actualizada correctamente',
+          'Especialidad creada correctamente en la base de datos',
           [
             {
               text: 'OK',
@@ -87,12 +69,12 @@ export default function EditarEps() {
           ]
         );
       } else {
-        console.log('❌ Error al actualizar EPS:', result.message);
-        Alert.alert('Error', result.message || 'No se pudo actualizar la EPS');
+        console.log('❌ Error al crear especialidad:', result.message);
+        Alert.alert('Error', result.message || 'No se pudo crear la especialidad');
       }
     } catch (error) {
-      console.error('❌ Error inesperado al actualizar EPS:', error);
-      Alert.alert('Error', 'Error de conexión. No se pudo actualizar la EPS.');
+      console.error('❌ Error inesperado al crear especialidad:', error);
+      Alert.alert('Error', 'Error de conexión. No se pudo crear la especialidad.');
     } finally {
       setLoading(false);
     }
@@ -101,7 +83,7 @@ export default function EditarEps() {
   const handleCancel = () => {
     Alert.alert(
       'Confirmar cancelación',
-      '¿Estás seguro de que deseas cancelar los cambios?',
+      '¿Estás seguro de que deseas cancelar? Los datos ingresados se perderán.',
       [
         {
           text: 'Continuar editando',
@@ -123,53 +105,45 @@ export default function EditarEps() {
         <TouchableOpacity onPress={handleCancel} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#1976D2" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Editar EPS</Text>
-        <TouchableOpacity onPress={handleActualizarEps} style={styles.saveButton}>
+        <Text style={styles.headerTitle}>Crear Especialidad</Text>
+        <TouchableOpacity onPress={handleCrearEspecialidad} style={styles.saveButton}>
           <Ionicons name="checkmark" size={24} color="#1976D2" />
         </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        {/* Información Básica */}
+        {/* Información de la Especialidad */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Información Básica</Text>
+          <Text style={styles.sectionTitle}>Información de la Especialidad</Text>
           
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Nombre de la EPS *</Text>
+            <Text style={styles.inputLabel}>Nombre de la Especialidad *</Text>
             <TextInput
               style={styles.textInput}
               value={formData.nombre}
               onChangeText={(value) => handleInputChange('nombre', value)}
-              placeholder="Ej: EPS Sanitas"
+              placeholder="Ej: Cardiología"
             />
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>NIT *</Text>
+            <Text style={styles.inputLabel}>Descripción *</Text>
             <TextInput
-              style={styles.textInput}
-              value={formData.nit}
-              onChangeText={(value) => handleInputChange('nit', value)}
-              placeholder="Ej: 900123456-1"
-              keyboardType="numeric"
-            />
-          </View>
-        </View>
-
-        {/* Observaciones */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Observaciones</Text>
-          
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Observaciones</Text>
-            <TextInput
-              style={[styles.textInput, styles.textArea]}
-              value={formData.observaciones}
-              onChangeText={(value) => handleInputChange('observaciones', value)}
-              placeholder="Observaciones adicionales (opcional)"
+              style={[styles.textInput, styles.multilineInput]}
+              value={formData.descripcion}
+              onChangeText={(value) => handleInputChange('descripcion', value)}
+              placeholder="Descripción detallada de la especialidad"
               multiline
               numberOfLines={4}
             />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Estado</Text>
+            <View style={styles.selectorInput}>
+              <Text style={styles.selectorText}>{formData.estado}</Text>
+              <Ionicons name="chevron-down" size={20} color="#666" />
+            </View>
           </View>
         </View>
 
@@ -181,11 +155,11 @@ export default function EditarEps() {
           
           <TouchableOpacity 
             style={[styles.saveButtonLarge, loading && styles.saveButtonDisabled]} 
-            onPress={handleActualizarEps}
+            onPress={handleCrearEspecialidad}
             disabled={loading}
           >
             <Text style={styles.saveButtonText}>
-              {loading ? 'Actualizando...' : 'Actualizar EPS'}
+              {loading ? 'Creando...' : 'Crear Especialidad'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -257,9 +231,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: '#fff',
   },
-  textArea: {
-    height: 80,
+  multilineInput: {
+    height: 100,
     textAlignVertical: 'top',
+  },
+  selectorInput: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    backgroundColor: '#fff',
+  },
+  selectorText: {
+    fontSize: 16,
+    color: '#333',
   },
   actionButtons: {
     flexDirection: 'row',

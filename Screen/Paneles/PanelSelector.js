@@ -46,6 +46,7 @@ export default function PanelSelector() {
 
     const role = user.role?.toLowerCase();
     console.log("PanelSelector: Rol del usuario:", role);
+    console.log("PanelSelector: Datos completos del usuario:", JSON.stringify(user, null, 2));
 
     switch (role) {
       case 'admin':

@@ -1,262 +1,318 @@
-import React, { useState, useEffect } from "react";
-import { ScrollView, View, StyleSheet, Text, TouchableOpacity } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import { Ionicons } from "@expo/vector-icons";
-import CardComponent from "../../components/CardComponent";
-import { getStoredUser } from "../../src/service/AuthService";
+import React from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Image,
+  Dimensions,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 
-export default function Inicio() {
+const { width } = Dimensions.get('window');
+
+export default function InicioClinica() {
   const navigation = useNavigation();
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadUserData();
-  }, []);
-
-  useEffect(() => {
-    if (user && !loading) {
-      navigation.navigate('PanelSelector');
-    }
-  }, [user, loading, navigation]);
-
-  const loadUserData = async () => {
-    try {
-      const { user: userData } = await getStoredUser();
-      setUser(userData);
-    } catch (error) {
-      console.error('Error al cargar datos del usuario:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Si está cargando, mostrar loading
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Cargando...</Text>
-      </View>
-    );
-  }
-
-  // Si el usuario está logueado, no mostrar nada (se navegará automáticamente)
-  if (user) {
-    return null;
-  }
 
   return (
-    <ScrollView contentContainerStyle={styles.scrollContainer}>
-      {/* Header */}
+    <ScrollView style={styles.container}>
+      {/* Header con logo de la clínica */}
       <View style={styles.header}>
-        <Text style={styles.title}>Citas Médicas</Text>
+        <View style={styles.logoContainer}>
+          <Ionicons name="medical" size={60} color="#1976D2" />
+          <Text style={styles.logoText}>Clínica San Rafael</Text>
+          <Text style={styles.subtitle}>Cuidando tu salud con excelencia</Text>
+        </View>
       </View>
 
-      {/* Botones de Login y Registro */}
-      <View style={styles.authButtons}>
-        <TouchableOpacity
-          style={styles.loginButton}
-          onPress={() => navigation.navigate("Login")}
+      {/* Información de la clínica */}
+      <View style={styles.infoSection}>
+        <Text style={styles.sectionTitle}>Bienvenido a nuestra clínica</Text>
+        <Text style={styles.description}>
+          Somos una clínica especializada en brindar atención médica de calidad 
+          con profesionales altamente capacitados y tecnología de vanguardia.
+        </Text>
+        
+        <View style={styles.featuresContainer}>
+          <View style={styles.featureItem}>
+            <Ionicons name="time-outline" size={24} color="#1976D2" />
+            <Text style={styles.featureText}>Atención 24/7</Text>
+          </View>
+          <View style={styles.featureItem}>
+            <Ionicons name="people-outline" size={24} color="#1976D2" />
+            <Text style={styles.featureText}>Médicos Especializados</Text>
+          </View>
+          <View style={styles.featureItem}>
+            <Ionicons name="shield-checkmark-outline" size={24} color="#1976D2" />
+            <Text style={styles.featureText}>Seguridad Garantizada</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Botones principales */}
+      <View style={styles.buttonsSection}>
+        <TouchableOpacity 
+          style={styles.primaryButton}
+          onPress={() => navigation.navigate('Login')}
         >
-          <Ionicons name="log-in-outline" size={18} color="#fff" />
-          <Text style={styles.loginText}>Iniciar Sesión</Text>
+          <Ionicons name="log-in-outline" size={24} color="#fff" />
+          <Text style={styles.primaryButtonText}>Iniciar Sesión</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.registerButton}
-          onPress={() => navigation.navigate("Register")}
+        <TouchableOpacity 
+          style={styles.secondaryButton}
+          onPress={() => navigation.navigate('Register')}
         >
-          <Ionicons name="person-add-outline" size={18} color="#fff" />
-          <Text style={styles.registerText}>Registrarse</Text>
+          <Ionicons name="person-add-outline" size={24} color="#1976D2" />
+          <Text style={styles.secondaryButtonText}>Crear Cuenta</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Información de la aplicación */}
-      <View style={styles.infoContainer}>
-        <Text style={styles.welcomeText}>¡Bienvenido a Citas Médicas!</Text>
-        <Text style={styles.descriptionText}>
-          Sistema de gestión médica para pacientes y profesionales de la salud.
-        </Text>
-        <Text style={styles.descriptionText}>
-          Inicia sesión o regístrate para acceder a tu panel personalizado.
-        </Text>
+      {/* Servicios disponibles */}
+      <View style={styles.servicesSection}>
+        <Text style={styles.sectionTitle}>Nuestros Servicios</Text>
+        
+        <View style={styles.servicesGrid}>
+          <View style={styles.serviceCard}>
+            <Ionicons name="heart-outline" size={32} color="#F44336" />
+            <Text style={styles.serviceTitle}>Cardiología</Text>
+          </View>
+          <View style={styles.serviceCard}>
+            <Ionicons name="eye-outline" size={32} color="#4CAF50" />
+            <Text style={styles.serviceTitle}>Dermatología</Text>
+          </View>
+          <View style={styles.serviceCard}>
+            <Ionicons name="fitness-outline" size={32} color="#FF9800" />
+            <Text style={styles.serviceTitle}>Ortopedia</Text>
+          </View>
+          <View style={styles.serviceCard}>
+            <Ionicons name="female-outline" size={32} color="#E91E63" />
+            <Text style={styles.serviceTitle}>Ginecología</Text>
+          </View>
+          <View style={styles.serviceCard}>
+            <Ionicons name="brain-outline" size={32} color="#9C27B0" />
+            <Text style={styles.serviceTitle}>Neurología</Text>
+          </View>
+          <View style={styles.serviceCard}>
+            <Ionicons name="happy-outline" size={32} color="#00BCD4" />
+            <Text style={styles.serviceTitle}>Pediatría</Text>
+          </View>
+        </View>
       </View>
 
-      {/* Características del sistema */}
-      <View style={styles.featuresContainer}>
-        <View style={styles.featureCard}>
-          <Ionicons name="shield-checkmark-outline" size={32} color="#198754" />
-          <Text style={styles.featureTitle}>Seguro</Text>
-          <Text style={styles.featureText}>Tus datos están protegidos</Text>
+      {/* Información de contacto */}
+      <View style={styles.contactSection}>
+        <Text style={styles.sectionTitle}>Información de Contacto</Text>
+        
+        <View style={styles.contactItem}>
+          <Ionicons name="location-outline" size={20} color="#666" />
+          <Text style={styles.contactText}>Calle Principal #123, Bogotá D.C.</Text>
         </View>
-        <View style={styles.featureCard}>
-          <Ionicons name="time-outline" size={32} color="#0d6efd" />
-          <Text style={styles.featureTitle}>Rápido</Text>
-          <Text style={styles.featureText}>Gestión eficiente de citas</Text>
+        
+        <View style={styles.contactItem}>
+          <Ionicons name="call-outline" size={20} color="#666" />
+          <Text style={styles.contactText}>+57 1 234 5678</Text>
         </View>
-        <View style={styles.featureCard}>
-          <Ionicons name="people-outline" size={32} color="#fd7e14" />
-          <Text style={styles.featureTitle}>Fácil</Text>
-          <Text style={styles.featureText}>Interfaz intuitiva</Text>
+        
+        <View style={styles.contactItem}>
+          <Ionicons name="mail-outline" size={20} color="#666" />
+          <Text style={styles.contactText}>info@clinicasanrafael.com</Text>
         </View>
+        
+        <View style={styles.contactItem}>
+          <Ionicons name="time-outline" size={20} color="#666" />
+          <Text style={styles.contactText}>Lunes a Viernes: 8:00 AM - 6:00 PM</Text>
+        </View>
+      </View>
+
+      {/* Footer */}
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>© 2024 Clínica San Rafael</Text>
+        <Text style={styles.footerSubtext}>Todos los derechos reservados</Text>
       </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  scrollContainer: {
-    flexGrow: 1,
-    backgroundColor: "#f8f9fa",
-    padding: 15,
-  },
-  header: {
-    backgroundColor: "#008080",
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 20,
-    alignItems: "center",
-  },
-  title: {
-    color: "#fff",
-    fontSize: 20,
-    fontWeight: "bold",
-  },
-  authButtons: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 20,
-  },
-  loginButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#0d6efd",
-    padding: 12,
-    borderRadius: 8,
+  container: {
     flex: 1,
-    marginRight: 10,
-    justifyContent: "center",
-  },
-  loginText: {
-    color: "#fff",
-    fontWeight: "bold",
-    marginLeft: 8,
-  },
-  registerButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#198754",
-    padding: 12,
-    borderRadius: 8,
-    flex: 1,
-    justifyContent: "center",
-  },
-  registerText: {
-    color: "#fff",
-    fontWeight: "bold",
-    marginLeft: 8,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginVertical: 10,
-  },
-  listContainer: {
-    marginBottom: 20,
-  },
-  card: {
-    backgroundColor: "#fff",
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 20,
-    elevation: 2,
-  },
-  cardText: {
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  cardSubText: {
-    color: "#6c757d",
-  },
-  cardStatus: {
-    color: "#198754",
-    fontWeight: "bold",
-    marginTop: 5,
-  },
-  summaryContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    marginTop: 10,
-  },
-  summaryCard: {
-    backgroundColor: "#fff",
-    width: "47%",
-    padding: 15,
-    borderRadius: 10,
-    alignItems: "center",
-    marginBottom: 15,
-    elevation: 2,
-  },
-  summaryNumber: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginVertical: 5,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
     backgroundColor: '#f8f9fa',
   },
-  loadingText: {
-    fontSize: 18,
-    color: '#666',
+  header: {
+    backgroundColor: '#1976D2',
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+    alignItems: 'center',
   },
-  infoContainer: {
-    backgroundColor: "#fff",
+  logoContainer: {
+    alignItems: 'center',
+  },
+  logoText: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginTop: 10,
+    marginBottom: 5,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#E3F2FD',
+    textAlign: 'center',
+  },
+  infoSection: {
     padding: 20,
-    borderRadius: 10,
-    marginBottom: 20,
+    backgroundColor: '#fff',
+    margin: 15,
+    borderRadius: 12,
     elevation: 2,
-    alignItems: "center",
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
   },
-  welcomeText: {
+  sectionTitle: {
     fontSize: 20,
-    fontWeight: "bold",
-    color: "#008080",
-    marginBottom: 10,
-    textAlign: "center",
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 15,
+    textAlign: 'center',
   },
-  descriptionText: {
-    fontSize: 14,
-    color: "#6c757d",
-    textAlign: "center",
-    marginBottom: 8,
-    lineHeight: 20,
+  description: {
+    fontSize: 16,
+    color: '#666',
+    lineHeight: 24,
+    textAlign: 'center',
+    marginBottom: 20,
   },
   featuresContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
   },
-  featureCard: {
-    backgroundColor: "#fff",
-    width: "30%",
-    padding: 15,
-    borderRadius: 10,
-    alignItems: "center",
-    elevation: 2,
-  },
-  featureTitle: {
-    fontSize: 14,
-    fontWeight: "bold",
-    marginVertical: 5,
-    color: "#333",
+  featureItem: {
+    alignItems: 'center',
+    flex: 1,
   },
   featureText: {
     fontSize: 12,
-    color: "#6c757d",
-    textAlign: "center",
+    color: '#666',
+    marginTop: 5,
+    textAlign: 'center',
+  },
+  buttonsSection: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  primaryButton: {
+    backgroundColor: '#1976D2',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 15,
+    borderRadius: 12,
+    marginBottom: 15,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+  },
+  primaryButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginLeft: 10,
+  },
+  secondaryButton: {
+    backgroundColor: '#fff',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 15,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#1976D2',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+  },
+  secondaryButtonText: {
+    color: '#1976D2',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginLeft: 10,
+  },
+  servicesSection: {
+    padding: 20,
+    backgroundColor: '#fff',
+    marginHorizontal: 15,
+    marginBottom: 20,
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+  },
+  servicesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  serviceCard: {
+    width: (width - 70) / 2,
+    backgroundColor: '#f8f9fa',
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  serviceTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  contactSection: {
+    padding: 20,
+    backgroundColor: '#fff',
+    marginHorizontal: 15,
+    marginBottom: 20,
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+  },
+  contactItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  contactText: {
+    fontSize: 14,
+    color: '#666',
+    marginLeft: 10,
+  },
+  footer: {
+    backgroundColor: '#1976D2',
+    paddingVertical: 20,
+    alignItems: 'center',
+  },
+  footerText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  footerSubtext: {
+    color: '#E3F2FD',
+    fontSize: 12,
+    marginTop: 5,
   },
 });

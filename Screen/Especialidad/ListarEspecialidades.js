@@ -10,18 +10,20 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import EspecialidadesService from '../../src/service/EspecialidadesService';
 
 export default function ListarEspecialidades() {
   const navigation = useNavigation();
   const [especialidades, setEspecialidades] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Datos de ejemplo para las especialidades
+  // Datos de ejemplo basados en la base de datos real
   const especialidadesEjemplo = [
     {
       id: '1',
       nombre: 'Cardiología',
       descripcion: 'Especialidad médica que se encarga del corazón y sistema cardiovascular',
+      estado: 'activa',
       totalMedicos: 15,
       totalConsultorios: 8,
     },
@@ -29,6 +31,7 @@ export default function ListarEspecialidades() {
       id: '2',
       nombre: 'Dermatología',
       descripcion: 'Especialidad médica que se encarga de la piel y enfermedades cutáneas',
+      estado: 'activa',
       totalMedicos: 12,
       totalConsultorios: 6,
     },
@@ -36,6 +39,7 @@ export default function ListarEspecialidades() {
       id: '3',
       nombre: 'Ortopedia',
       descripcion: 'Especialidad médica que se encarga de huesos, articulaciones y músculos',
+      estado: 'activa',
       totalMedicos: 18,
       totalConsultorios: 10,
     },
@@ -43,6 +47,7 @@ export default function ListarEspecialidades() {
       id: '4',
       nombre: 'Ginecología',
       descripcion: 'Especialidad médica que se encarga de la salud femenina',
+      estado: 'activa',
       totalMedicos: 14,
       totalConsultorios: 7,
     },
@@ -50,8 +55,33 @@ export default function ListarEspecialidades() {
       id: '5',
       nombre: 'Neurología',
       descripcion: 'Especialidad médica que se encarga del sistema nervioso',
+      estado: 'activa',
       totalMedicos: 10,
       totalConsultorios: 5,
+    },
+    {
+      id: '6',
+      nombre: 'Pediatría',
+      descripcion: 'Especialidad médica que se encarga de la salud infantil',
+      estado: 'activa',
+      totalMedicos: 16,
+      totalConsultorios: 9,
+    },
+    {
+      id: '7',
+      nombre: 'Psiquiatría',
+      descripcion: 'Especialidad médica que se encarga de la salud mental',
+      estado: 'activa',
+      totalMedicos: 8,
+      totalConsultorios: 4,
+    },
+    {
+      id: '8',
+      nombre: 'Oftalmología',
+      descripcion: 'Especialidad médica que se encarga de los ojos y visión',
+      estado: 'activa',
+      totalMedicos: 11,
+      totalConsultorios: 6,
     },
   ];
 
@@ -59,25 +89,39 @@ export default function ListarEspecialidades() {
     cargarEspecialidades();
   }, []);
 
-  const cargarEspecialidades = () => {
-    // Simular carga de datos
-    setEspecialidades(especialidadesEjemplo);
+  const cargarEspecialidades = async () => {
+    try {
+      console.log('🔍 Iniciando carga de especialidades...');
+      
+      // Intentar cargar desde el servidor
+      const result = await EspecialidadesService.obtenerEspecialidadesPublicas();
+      
+      if (result.success && result.data.length > 0) {
+        console.log('✅ Especialidades cargadas desde el servidor');
+        setEspecialidades(result.data);
+      } else {
+        console.log('📱 Usando datos de ejemplo (servidor no disponible)');
+        setEspecialidades(especialidadesEjemplo);
+      }
+      
+    } catch (error) {
+      console.error('❌ Error inesperado:', error);
+      console.log('📱 Usando datos de ejemplo por error');
+      setEspecialidades(especialidadesEjemplo);
+    }
   };
 
-  const onRefresh = () => {
+  const onRefresh = async () => {
     setRefreshing(true);
-    // Simular recarga de datos
-    setTimeout(() => {
-      cargarEspecialidades();
-      setRefreshing(false);
-    }, 1000);
+    await cargarEspecialidades();
+    setRefreshing(false);
   };
 
   const editarEspecialidad = (especialidad) => {
     navigation.navigate('EditarEspecialidad', { especialidad });
   };
 
-  const eliminarEspecialidad = (id) => {
+  const eliminarEspecialidad = async (id) => {
     Alert.alert(
       'Confirmar eliminación',
       '¿Estás seguro de que deseas eliminar esta especialidad?',
@@ -89,9 +133,19 @@ export default function ListarEspecialidades() {
         {
           text: 'Eliminar',
           style: 'destructive',
-          onPress: () => {
-            setEspecialidades(especialidades.filter(esp => esp.id !== id));
-            Alert.alert('Éxito', 'Especialidad eliminada correctamente');
+          onPress: async () => {
+            try {
+              const result = await EspecialidadesService.eliminarEspecialidad(id);
+              if (result.success) {
+                setEspecialidades(especialidades.filter(esp => esp.id !== id));
+                Alert.alert('Éxito', 'Especialidad eliminada correctamente');
+              } else {
+                Alert.alert('Error', result.message);
+              }
+            } catch (error) {
+              console.error('Error al eliminar especialidad:', error);
+              Alert.alert('Error', 'No se pudo eliminar la especialidad');
+            }
           },
         },
       ]
@@ -115,6 +169,10 @@ export default function ListarEspecialidades() {
         <View style={styles.estadisticaItem}>
           <Text style={styles.estadisticaNumero}>{item.totalConsultorios}</Text>
           <Text style={styles.estadisticaLabel}>Consultorios</Text>
+        </View>
+        <View style={styles.estadisticaItem}>
+          <Text style={styles.estadisticaNumero}>{item.estado === 'activa' ? 'Activa' : 'Inactiva'}</Text>
+          <Text style={styles.estadisticaLabel}>Estado</Text>
         </View>
       </View>
 

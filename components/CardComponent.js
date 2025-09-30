@@ -17,12 +17,13 @@ export default function CardComponent({ title, description, icon, onPress }) {
 
 const styles = StyleSheet.create({
   card: {
-    width: "31%",               // 2 cards por fila
-    alignItems: "flex-start",   // Alineado a la izquierda
+    width: "100%",             // Una sola columna
+    flexDirection: "row",      // Layout horizontal
+    alignItems: "center",      // Centrado verticalmente
     backgroundColor: "#fff",
     borderRadius: 12,
     padding: 16,
-    margin: 8,                  
+    marginBottom: 12,          // Solo margen inferior
     elevation: 3,
     shadowColor: "#000",
     shadowOpacity: 0.1,
@@ -31,16 +32,17 @@ const styles = StyleSheet.create({
   },
 
   iconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: "#E3F2FD",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 8,            // separación debajo del ícono
+    marginRight: 16,            // separación a la derecha del ícono
   },
 
   textContainer: {
+    flex: 1,                    // Ocupa el espacio restante
     alignItems: "flex-start",   // alineado a la izquierda
   },
 

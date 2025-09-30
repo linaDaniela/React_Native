@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import PacientesService from '../../src/service/PacientesService';
 
 export default function ListarPaciente() {
   const navigation = useNavigation();
@@ -21,11 +22,11 @@ export default function ListarPaciente() {
     {
       id: '1',
       nombre: 'Juan',
-      apellido: 'Pineda',
+      apellido: 'Pérez',
       cedula: '12345678',
       edad: 35,
       telefono: '(601) 123-4567',
-      email: 'juan.pineda@email.com',
+      email: 'juan.perez@email.com',
       direccion: 'Calle 123 #45-67, Bogotá',
       eps: 'EPS Sanitas',
       fechaNacimiento: '1989-05-15',
@@ -33,23 +34,23 @@ export default function ListarPaciente() {
     {
       id: '2',
       nombre: 'María',
-      apellido: 'Lisarazo',
+      apellido: 'López',
       cedula: '23456789',
       edad: 28,
       telefono: '(601) 234-5678',
-      email: 'maria.lisarazo@email.com',
+      email: 'maria.lopez@email.com',
       direccion: 'Carrera 45 #78-90, Medellín',
       eps: 'EPS Sura',
       fechaNacimiento: '1996-03-22',
     },
     {
       id: '3',
-      nombre: 'Hugo',
+      nombre: 'Pedro',
       apellido: 'Rodríguez',
       cedula: '34567890',
       edad: 42,
       telefono: '(601) 345-6789',
-      email: 'Hugo.rodriguez@email.com',
+      email: 'pedro.rodriguez@email.com',
       direccion: 'Avenida 80 #12-34, Cali',
       eps: 'EPS Coomeva',
       fechaNacimiento: '1982-11-08',
@@ -57,52 +58,74 @@ export default function ListarPaciente() {
     {
       id: '4',
       nombre: 'Laura',
-      apellido: 'Cardozo',
+      apellido: 'Sánchez',
       cedula: '45678901',
       edad: 31,
       telefono: '(601) 456-7890',
-      email: 'laura.cardozo@email.com',
+      email: 'laura.sanchez@email.com',
       direccion: 'Calle 100 #56-78, Barranquilla',
       eps: 'EPS Compensar',
       fechaNacimiento: '1993-07-14',
     },
     {
       id: '5',
-      nombre: 'Luis',
+      nombre: 'Carlos',
       apellido: 'García',
       cedula: '56789012',
       edad: 55,
       telefono: '(601) 567-8901',
-      email: 'luis.garcia@email.com',
+      email: 'carlos.garcia@email.com',
       direccion: 'Carrera 15 #23-45, Bucaramanga',
       eps: 'EPS Sanitas',
       fechaNacimiento: '1969-12-03',
     },
   ];
 
-  useEffect(() => {
+    useEffect(() => {
     cargarPacientes();
   }, []);
 
-  const cargarPacientes = () => {
-    // Simular carga de datos
-    setPacientes(pacientesEjemplo);
+  // Escuchar cambios cuando se regresa de editar
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      // Recargar pacientes cuando la pantalla recibe foco
+      cargarPacientes();
+    });
+
+    return unsubscribe;
+  }, [navigation]);
+
+  const cargarPacientes = async () => {
+    try {
+      console.log('Cargando pacientes desde la base de datos...');
+      const result = await PacientesService.obtenerPacientes();
+      
+      if (result.success && result.data && result.data.length > 0) {
+        console.log('✅ Pacientes cargados desde BD:', result.data.length);
+        setPacientes(result.data);
+      } else {
+        console.log('⚠️ Usando datos de ejemplo - Error del servidor:', result.message);
+        // Usar datos de ejemplo como fallback sin mostrar error
+        setPacientes(pacientesEjemplo);
+      }
+    } catch (error) {
+      console.error('❌ Error de conexión al cargar pacientes:', error);
+      // Usar datos de ejemplo como fallback sin mostrar error
+      setPacientes(pacientesEjemplo);
+    }
   };
 
-  const onRefresh = () => {
+  const onRefresh = async () => {
     setRefreshing(true);
-    // Simular recarga de datos
-    setTimeout(() => {
-      cargarPacientes();
-      setRefreshing(false);
-    }, 1000);
+    await cargarPacientes();
+    setRefreshing(false);
   };
 
   const editarPaciente = (paciente) => {
     navigation.navigate('EditarPaciente', { paciente });
   };
 
-  const eliminarPaciente = (id) => {
+  const eliminarPaciente = async (id) => {
     Alert.alert(
       'Confirmar eliminación',
       '¿Estás seguro de que deseas eliminar este paciente?',
@@ -114,65 +137,110 @@ export default function ListarPaciente() {
         {
           text: 'Eliminar',
           style: 'destructive',
-          onPress: () => {
-            setPacientes(pacientes.filter(paciente => paciente.id !== id));
-            Alert.alert('Éxito', 'Paciente eliminado correctamente');
+          onPress: async () => {
+            try {
+              const result = await PacientesService.eliminarPaciente(id);
+              if (result.success) {
+                setPacientes(pacientes.filter(paciente => paciente.id !== id));
+                Alert.alert('Éxito', 'Paciente eliminado correctamente');
+              } else {
+                Alert.alert('Error', result.message);
+              }
+            } catch (error) {
+              console.error('Error al eliminar paciente:', error);
+              Alert.alert('Error', 'No se pudo eliminar el paciente');
+            }
           },
         },
       ]
     );
   };
 
-  const renderPaciente = ({ item }) => (
-    <View style={styles.pacienteCard}>
-      <View style={styles.pacienteHeader}>
-        <View style={styles.pacienteInfo}>
-          <Text style={styles.pacienteNombre}>{item.nombre} {item.apellido}</Text>
-          <Text style={styles.pacienteCedula}>CC: {item.cedula}</Text>
+  // Función para calcular la edad
+  const calcularEdad = (fechaNacimiento) => {
+    if (!fechaNacimiento) return null;
+    
+    try {
+      // Si viene en formato ISO, extraer solo la fecha
+      const fecha = fechaNacimiento.includes('T') 
+        ? fechaNacimiento.split('T')[0] 
+        : fechaNacimiento;
+      
+      const hoy = new Date();
+      const nacimiento = new Date(fecha);
+      
+      if (isNaN(nacimiento.getTime())) return null;
+      
+      let edad = hoy.getFullYear() - nacimiento.getFullYear();
+      const mes = hoy.getMonth() - nacimiento.getMonth();
+      
+      if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) {
+        edad--;
+      }
+      
+      return edad;
+    } catch (error) {
+      console.error('Error calculando edad:', error);
+      return null;
+    }
+  };
+
+  const renderPaciente = ({ item }) => {
+    const edad = calcularEdad(item.fecha_nacimiento || item.fechaNacimiento);
+    
+    return (
+      <View style={styles.pacienteCard}>
+        <View style={styles.pacienteHeader}>
+          <View style={styles.pacienteInfo}>
+            <Text style={styles.pacienteNombre}>{item.nombre} {item.apellido}</Text>
+            <Text style={styles.pacienteCedula}>CC: {item.cedula}</Text>
+          </View>
+          {edad !== null && (
+            <View style={styles.pacienteEdad}>
+              <Text style={styles.edadText}>{edad} años</Text>
+            </View>
+          )}
         </View>
-        <View style={styles.pacienteEdad}>
-          <Text style={styles.edadText}>{item.edad} años</Text>
+
+        <View style={styles.pacienteDetalles}>
+          <View style={styles.detalleRow}>
+            <Ionicons name="call-outline" size={16} color="#666" />
+            <Text style={styles.detalleText}>{item.telefono}</Text>
+          </View>
+          <View style={styles.detalleRow}>
+            <Ionicons name="mail-outline" size={16} color="#666" />
+            <Text style={styles.detalleText}>{item.email}</Text>
+          </View>
+          <View style={styles.detalleRow}>
+            <Ionicons name="location-outline" size={16} color="#666" />
+            <Text style={styles.detalleText}>{item.direccion}</Text>
+          </View>
+          <View style={styles.detalleRow}>
+            <Ionicons name="business-outline" size={16} color="#666" />
+            <Text style={styles.detalleText}>{item.eps}</Text>
+          </View>
+        </View>
+
+        <View style={styles.accionesContainer}>
+          <TouchableOpacity
+            style={[styles.botonAccion, styles.botonEditar]}
+            onPress={() => editarPaciente(item)}
+          >
+            <Ionicons name="create-outline" size={20} color="#1976D2" />
+            <Text style={styles.botonText}>Editar</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.botonAccion, styles.botonEliminar]}
+            onPress={() => eliminarPaciente(item.id)}
+          >
+            <Ionicons name="trash-outline" size={20} color="#F44336" />
+            <Text style={styles.botonText}>Eliminar</Text>
+          </TouchableOpacity>
         </View>
       </View>
-
-      <View style={styles.pacienteDetalles}>
-        <View style={styles.detalleRow}>
-          <Ionicons name="call-outline" size={16} color="#666" />
-          <Text style={styles.detalleText}>{item.telefono}</Text>
-        </View>
-        <View style={styles.detalleRow}>
-          <Ionicons name="mail-outline" size={16} color="#666" />
-          <Text style={styles.detalleText}>{item.email}</Text>
-        </View>
-        <View style={styles.detalleRow}>
-          <Ionicons name="location-outline" size={16} color="#666" />
-          <Text style={styles.detalleText}>{item.direccion}</Text>
-        </View>
-        <View style={styles.detalleRow}>
-          <Ionicons name="business-outline" size={16} color="#666" />
-          <Text style={styles.detalleText}>{item.eps}</Text>
-        </View>
-      </View>
-
-      <View style={styles.accionesContainer}>
-        <TouchableOpacity
-          style={[styles.botonAccion, styles.botonEditar]}
-          onPress={() => editarPaciente(item)}
-        >
-          <Ionicons name="create-outline" size={20} color="#1976D2" />
-          <Text style={styles.botonText}>Editar</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.botonAccion, styles.botonEliminar]}
-          onPress={() => eliminarPaciente(item.id)}
-        >
-          <Ionicons name="trash-outline" size={20} color="#F44336" />
-          <Text style={styles.botonText}>Eliminar</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <View style={styles.container}>

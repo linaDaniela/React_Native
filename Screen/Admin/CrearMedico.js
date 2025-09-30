@@ -57,10 +57,24 @@ export default function CrearMedico({ navigation }) {
   };
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    // Validación especial para campos de hora
+    if (field === 'horario_inicio' || field === 'horario_fin') {
+      // Permitir solo números y dos puntos
+      const cleanValue = value.replace(/[^0-9:]/g, '');
+      
+      // Permitir hasta 5 caracteres (HH:MM)
+      if (cleanValue.length <= 5) {
+        setFormData(prev => ({
+          ...prev,
+          [field]: cleanValue
+        }));
+      }
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [field]: value
+      }));
+    }
   };
 
   const validateForm = () => {
@@ -91,7 +105,23 @@ export default function CrearMedico({ navigation }) {
       return false;
     }
 
+    // Validar formato de horarios
+    if (formData.horario_inicio && !isValidTimeFormat(formData.horario_inicio)) {
+      Alert.alert('Error', 'El horario de inicio debe tener el formato HH:MM (ej: 08:00)');
+      return false;
+    }
+    
+    if (formData.horario_fin && !isValidTimeFormat(formData.horario_fin)) {
+      Alert.alert('Error', 'El horario de fin debe tener el formato HH:MM (ej: 17:00)');
+      return false;
+    }
+
     return true;
+  };
+
+  const isValidTimeFormat = (time) => {
+    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    return timeRegex.test(time);
   };
 
   const handleCrearMedico = async () => {
@@ -282,18 +312,28 @@ export default function CrearMedico({ navigation }) {
           <Text style={styles.sectionTitle}>Horarios</Text>
           
           <View style={styles.timeContainer}>
-            <TextInput
-              style={[styles.input, styles.timeInput]}
-              placeholder="Hora inicio (HH:MM)"
-              value={formData.horario_inicio}
-              onChangeText={(value) => handleInputChange('horario_inicio', value)}
-            />
-            <TextInput
-              style={[styles.input, styles.timeInput]}
-              placeholder="Hora fin (HH:MM)"
-              value={formData.horario_fin}
-              onChangeText={(value) => handleInputChange('horario_fin', value)}
-            />
+            <View style={styles.timeInputGroup}>
+              <Text style={styles.timeLabel}>Hora de inicio</Text>
+              <TextInput
+                style={[styles.input, styles.timeInput]}
+                placeholder="08:00"
+                value={formData.horario_inicio}
+                onChangeText={(value) => handleInputChange('horario_inicio', value)}
+                keyboardType="default"
+                maxLength={5}
+              />
+            </View>
+            <View style={styles.timeInputGroup}>
+              <Text style={styles.timeLabel}>Hora de fin</Text>
+              <TextInput
+                style={[styles.input, styles.timeInput]}
+                placeholder="17:00"
+                value={formData.horario_fin}
+                onChangeText={(value) => handleInputChange('horario_fin', value)}
+                keyboardType="default"
+                maxLength={5}
+              />
+            </View>
           </View>
 
           <TextInput
@@ -435,9 +475,19 @@ const styles = StyleSheet.create({
   timeContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginBottom: 15,
+  },
+  timeInputGroup: {
+    width: '48%',
+  },
+  timeLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 5,
   },
   timeInput: {
-    width: '48%',
+    width: '100%',
   },
   createButton: {
     marginTop: 30,

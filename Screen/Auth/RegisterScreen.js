@@ -9,7 +9,7 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
+// import { LinearGradient } from "expo-linear-gradient"; // Comentado temporalmente
 import ApiService from "../../src/service/ApiService";
 
 export default function RegisterScreen({ navigation }) {
@@ -123,7 +123,7 @@ export default function RegisterScreen({ navigation }) {
   };
 
   return (
-    <LinearGradient colors={["#fce4ec", "#fff1f8"]} style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: "#fce4ec" }}>
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.card}>
           <Text style={styles.heading}> Crear Cuenta </Text>
@@ -193,21 +193,19 @@ export default function RegisterScreen({ navigation }) {
               onPress={handleRegister} 
               activeOpacity={0.8}
               disabled={loading}
-              style={loading ? styles.registerButtonDisabled : null}
+              style={[
+                styles.registerButton,
+                loading && styles.registerButtonDisabled
+              ]}
             >
-              <LinearGradient
-                colors={loading ? ["#ccc", "#ddd"] : ["#f48fb1", "#ce93d8"]}
-                style={styles.registerButton}
-              >
-                {loading ? (
-                  <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="small" color="#fff" />
-                    <Text style={styles.registerButtonText}>Registrando...</Text>
-                  </View>
-                ) : (
-                  <Text style={styles.registerButtonText}>Registrar</Text>
-                )}
-              </LinearGradient>
+              {loading ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="small" color="#fff" />
+                  <Text style={styles.registerButtonText}>Registrando...</Text>
+                </View>
+              ) : (
+                <Text style={styles.registerButtonText}>Registrar</Text>
+              )}
             </TouchableOpacity>
           </View>
 
@@ -331,7 +329,7 @@ export default function RegisterScreen({ navigation }) {
                </TouchableOpacity>
 
       </ScrollView>
-    </LinearGradient>
+    </View>
   );
 }
 
@@ -376,6 +374,7 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     marginTop: 25,
     alignItems: "center",
+    backgroundColor: "#f48fb1",
     shadowColor: "#d81b60",
     shadowOpacity: 0.2,
     shadowRadius: 10,

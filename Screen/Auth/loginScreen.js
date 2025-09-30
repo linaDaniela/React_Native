@@ -9,8 +9,7 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { loginUser } from "../../src/service/AuthService";
+import ApiService from "../../src/service/ApiService";
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState("");
@@ -25,17 +24,45 @@ export default function LoginScreen({ navigation }) {
 
   // Función para detectar el tipo de usuario basado en el email
   const detectUserType = (email) => {
-    if (email.includes('@sistema.com')) {
+    console.log("🔍 Detectando tipo de usuario para email:", email);
+    
+    // Lista de emails/usuarios de médicos conocidos
+    const medicosEmails = [
+      'Wilmer.Morales@hospital.com',
+      'wmorales',
+      'asaavedra',
+      'medico@hospital.com',
+      '@hospital.com'
+    ];
+    
+    // Lista de emails/usuarios de administradores conocidos
+    const adminEmails = [
+      '@sistema.com',
+      'admin@',
+      'wilmer@gmail.com',
+      'maria.gonzalez@sistema.com',
+      'powbs@gmail.com'
+    ];
+    
+    // Detectar administradores
+    if (adminEmails.some(adminEmail => email.includes(adminEmail))) {
+      console.log("✅ Detectado como administrador");
       return 'administrador';
-    } else if (email.includes('@hospital.com')) {
+    } 
+    // Detectar médicos
+    else if (medicosEmails.some(medicoEmail => email.includes(medicoEmail))) {
+      console.log("✅ Detectado como médico");
       return 'medico';
-    } else {
+    } 
+    // Por defecto, paciente
+    else {
+      console.log("✅ Detectado como paciente");
       return 'paciente';
     }
   };
 
   const handleLogin = async () => {
-    // Validaciones
+    // Validaciones básicas
     if (!email || !password) {
       Alert.alert("Error", "Por favor completa todos los campos");
       return;
@@ -46,39 +73,35 @@ export default function LoginScreen({ navigation }) {
       return;
     }
 
-    if (password.length < 6) {
-      Alert.alert("Error", "La contraseña debe tener al menos 6 caracteres");
-      return;
-    }
-
     setLoading(true);
 
     try {
-      // Detectar tipo de usuario automáticamente
-      const tipo_usuario = detectUserType(email);
-      console.log("Intentando login con:", email, "tipo:", tipo_usuario);
+      console.log("🔐 Intentando login con ApiService...");
+      console.log("📧 Email:", email);
+      console.log("🔑 Password:", password);
       
-      const result = await loginUser(email, password, tipo_usuario);
+      const tipo_usuario = detectUserType(email);
+      console.log("👤 Tipo de usuario detectado:", tipo_usuario);
+      
+      const result = await ApiService.loginUser(email, password, tipo_usuario);
       
       if (result.success) {
-        console.log("Login exitoso, navegando al panel del usuario...");
-        Alert.alert("¡Éxito!", `Bienvenido ${result.user?.name || result.user?.nombre || email}`, [
-          {
-            text: "Continuar",
-            onPress: () => {
-              // Navegar al PanelSelector que detectará el tipo de usuario
-              navigation.navigate('InicioStack', { 
-                screen: 'PanelSelector' 
-              });
-            }
-          }
-        ]);
+        console.log("✅ Login exitoso:", result.user.name);
+        console.log("✅ Rol del usuario:", result.user.role);
+        
+        // Forzar recarga de la navegación para que detecte el nuevo token
+        if (global.forceNavigationReload) {
+          global.forceNavigationReload();
+        }
+        
+        // No mostrar alerta, redirigir directamente
+        console.log("Login exitoso, redirigiendo automáticamente...");
       } else {
-        console.error("Error en login:", result.message);
-        Alert.alert("Error", result.message || "Error al iniciar sesión");
+        console.error("❌ Error en login:", result.message);
+        Alert.alert("Error", result.message);
       }
     } catch (error) {
-      console.error("Error inesperado:", error);
+      console.error("❌ Error inesperado:", error);
       Alert.alert("Error", "Ocurrió un error inesperado. Intenta nuevamente.");
     } finally {
       setLoading(false);
@@ -87,7 +110,7 @@ export default function LoginScreen({ navigation }) {
 
 
   return (
-    <LinearGradient colors={["#fce4ec", "#fff1f8"]} style={{ flex: 1 }}>
+    <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.card}>
           <Text style={styles.heading}> Bienvenido💖
@@ -129,20 +152,16 @@ export default function LoginScreen({ navigation }) {
               onPress={handleLogin} 
               activeOpacity={0.8}
               disabled={loading}
+              style={[styles.loginButton, loading && styles.loginButtonDisabled]}
             >
-              <LinearGradient
-                colors={loading ? ["#cccccc", "#999999"] : ["#728da8ff", "#598899ff"]}
-                style={[styles.loginButton, loading && styles.loginButtonDisabled]}
-              >
-                {loading ? (
-                  <View style={styles.loadingContainer}>
-                    <ActivityIndicator color="#fff" size="small" />
-                    <Text style={styles.loginButtonText}>Iniciando sesión...</Text>
-                  </View>
-                ) : (
-                  <Text style={styles.loginButtonText}>Ingresar</Text>
-                )}
-              </LinearGradient>
+              {loading ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator color="#fff" size="small" />
+                  <Text style={styles.loginButtonText}>Iniciando sesión...</Text>
+                </View>
+              ) : (
+                <Text style={styles.loginButtonText}>Ingresar</Text>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -154,47 +173,10 @@ export default function LoginScreen({ navigation }) {
           </Text>
         </TouchableOpacity>
 
-        {/* Credenciales de demo */}
-        <View style={styles.demoContainer}>
-          <Text style={styles.demoTitle}>🔧 Credenciales de prueba:</Text>
-          <TouchableOpacity
-            style={styles.demoCredential}
-            onPress={() => {
-              setEmail("admin@sistema.com");
-              setPassword("admin123");
-            }}
-          >
-            <Text style={styles.demoText}>
-              <Text style={styles.demoRole}>admin:</Text> admin@sistema.com / admin123
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.demoCredential}
-            onPress={() => {
-              setEmail("Wilmer.Morales@hospital.com");
-              setPassword("medico123");
-            }}
-          >
-            <Text style={styles.demoText}>
-              <Text style={styles.demoRole}>médico:</Text> Wilmer.Morales@hospital.com / medico123
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.demoCredential}
-            onPress={() => {
-              setEmail("juan.pineda@email.com");
-              setPassword("paciente123");
-            }}
-          >
-            <Text style={styles.demoText}>
-              <Text style={styles.demoRole}>paciente:</Text> juan.pineda@email.com / paciente123
-            </Text>
-          </TouchableOpacity>
-        </View>
 
 
       </ScrollView>
-    </LinearGradient>
+    </View>
   );
 }
 
@@ -255,6 +237,7 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     marginTop: 10,
     alignItems: "center",
+    backgroundColor: "#728da8ff",
     shadowColor: "#d81b60",
     shadowOpacity: 0.2,
     shadowRadius: 10,
@@ -283,36 +266,5 @@ const styles = StyleSheet.create({
   registerLinkHighlight: {
     color: "#d81b60",
     fontWeight: "bold",
-  },
-  demoContainer: {
-    marginTop: 20,
-    padding: 15,
-    backgroundColor: "#f8f9fa",
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#e9ecef",
-  },
-  demoTitle: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#495057",
-    marginBottom: 10,
-    textAlign: "center",
-  },
-  demoCredential: {
-    padding: 8,
-    marginVertical: 2,
-    backgroundColor: "#fff",
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: "#dee2e6",
-  },
-  demoText: {
-    fontSize: 12,
-    color: "#6c757d",
-  },
-  demoRole: {
-    fontWeight: "bold",
-    color: "#495057",
   },
 });

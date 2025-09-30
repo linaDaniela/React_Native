@@ -10,6 +10,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import CitasService from '../../src/service/CitasService';
 
 export default function ListarCitas() {
   const navigation = useNavigation();
@@ -64,25 +66,103 @@ export default function ListarCitas() {
     cargarCitas();
   }, []);
 
-  const cargarCitas = () => {
-    // Simular carga de datos
-    setCitas(citasEjemplo);
+  // Escuchar cambios cuando se regresa de editar
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      // Recargar citas cuando la pantalla recibe foco
+      cargarCitas();
+    });
+
+    return unsubscribe;
+  }, [navigation]);
+
+  const cargarCitas = async () => {
+    try {
+      console.log('🔄 Cargando citas desde la base de datos...');
+      
+      // Primero probar la conexión
+      console.log('🧪 Probando conexión...');
+      const pruebaConexion = await CitasService.probarConexion();
+      
+      if (pruebaConexion.success) {
+        console.log('✅ Conexión exitosa, procesando datos...');
+        const citas = pruebaConexion.data || [];
+        
+        if (citas.length > 0) {
+          console.log('📋 Cargando nombres para', citas.length, 'citas...');
+          
+          // Cargar nombres usando el método del servicio
+          const resultConNombres = await CitasService.cargarNombresParaCitas(citas);
+          
+          if (resultConNombres.success) {
+            console.log('✅ Nombres cargados correctamente');
+            setCitas(resultConNombres.data);
+          } else {
+            console.log('⚠️ Error cargando nombres, usando datos básicos');
+            setCitas(citas);
+          }
+        } else {
+          console.log('📋 No hay citas para procesar');
+          setCitas([]);
+        }
+        return;
+      } else {
+        console.log('❌ Error en la conexión:', pruebaConexion.error);
+        console.log('📋 Status:', pruebaConexion.status);
+        console.log('📋 Datos del error:', pruebaConexion.data);
+        setCitas([]);
+        return;
+      }
+      
+      // Código anterior como respaldo
+      // Intentar cargar citas con relaciones completas primero
+      let result = await CitasService.obtenerCitasCompletas();
+      
+      if (result.success && result.data && result.data.length > 0) {
+        console.log('✅ Citas completas cargadas:', result.data.length);
+        console.log('Primera cita:', JSON.stringify(result.data[0], null, 2));
+        setCitas(result.data);
+      } else {
+        console.log('⚠️ Intentando cargar citas básicas...');
+        
+        // Si falla, intentar con citas básicas
+        result = await CitasService.obtenerCitas();
+        
+        if (result.success && result.data && result.data.length > 0) {
+          console.log('✅ Citas básicas cargadas:', result.data.length);
+          
+          // Usar el método del servicio para cargar nombres
+          const resultConNombres = await CitasService.cargarNombresParaCitas(result.data);
+          
+          if (resultConNombres.success) {
+            console.log('✅ Nombres cargados correctamente');
+            setCitas(resultConNombres.data);
+          } else {
+            console.log('⚠️ Error cargando nombres, usando datos básicos');
+            setCitas(result.data);
+          }
+        } else {
+          console.log('❌ No se pudieron cargar citas:', result.message);
+          setCitas([]);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error de conexión al cargar citas:', error);
+      setCitas([]);
+    }
   };
 
-  const onRefresh = () => {
+  const onRefresh = async () => {
     setRefreshing(true);
-    // Simular recarga de datos
-    setTimeout(() => {
-      cargarCitas();
-      setRefreshing(false);
-    }, 1000);
+    await cargarCitas();
+    setRefreshing(false);
   };
 
   const editarCita = (cita) => {
     navigation.navigate('EditarCita', { cita });
   };
 
-  const eliminarCita = (id) => {
+  const eliminarCita = async (id) => {
     Alert.alert(
       'Confirmar eliminación',
       '¿Estás seguro de que deseas eliminar esta cita?',
@@ -94,9 +174,19 @@ export default function ListarCitas() {
         {
           text: 'Eliminar',
           style: 'destructive',
-          onPress: () => {
-            setCitas(citas.filter(cita => cita.id !== id));
-            Alert.alert('Éxito', 'Cita eliminada correctamente');
+          onPress: async () => {
+            try {
+              const result = await CitasService.eliminarCita(id);
+              if (result.success) {
+                setCitas(citas.filter(cita => cita.id !== id));
+                Alert.alert('Éxito', 'Cita eliminada correctamente');
+              } else {
+                Alert.alert('Error', result.message);
+              }
+            } catch (error) {
+              console.error('Error al eliminar cita:', error);
+              Alert.alert('Error', 'No se pudo eliminar la cita');
+            }
           },
         },
       ]
@@ -116,54 +206,107 @@ export default function ListarCitas() {
     }
   };
 
-  const renderCita = ({ item }) => (
-    <View style={styles.citaCard}>
-      <View style={styles.citaHeader}>
-        <View style={styles.pacienteInfo}>
-          <Text style={styles.pacienteNombre}>{item.paciente}</Text>
-          <Text style={styles.medicoNombre}>{item.medico}</Text>
+  const renderCita = ({ item }) => {
+    // Función para formatear fecha
+    const formatearFecha = (fecha) => {
+      if (!fecha) return 'Sin fecha';
+      
+      try {
+        // Si viene en formato ISO, extraer solo la fecha
+        if (fecha.includes('T')) {
+          const fechaParte = fecha.split('T')[0];
+          const [año, mes, dia] = fechaParte.split('-');
+          return `${dia}/${mes}/${año}`;
+        }
+        
+        // Si ya viene en formato YYYY-MM-DD
+        if (fecha.includes('-')) {
+          const [año, mes, dia] = fecha.split('-');
+          return `${dia}/${mes}/${año}`;
+        }
+        
+        return fecha;
+      } catch (error) {
+        return fecha;
+      }
+    };
+
+    // Función para obtener nombre del paciente
+    const obtenerNombrePaciente = () => {
+      return item.paciente_nombre || `Paciente ID: ${item.paciente_id}` || 'Paciente no especificado';
+    };
+
+    // Función para obtener nombre del médico
+    const obtenerNombreMedico = () => {
+      return item.medico_nombre || `Médico ID: ${item.medico_id}` || 'Médico no especificado';
+    };
+
+    // Función para obtener especialidad
+    const obtenerEspecialidad = () => {
+      return item.especialidad_nombre || 'Sin especialidad';
+    };
+
+    return (
+      <View style={styles.citaCard}>
+        <View style={styles.citaHeader}>
+          <View style={styles.pacienteInfo}>
+            <Text style={styles.pacienteNombre}>
+              {obtenerNombrePaciente()}
+            </Text>
+            <Text style={styles.medicoNombre}>
+              {obtenerNombreMedico()}
+            </Text>
+          </View>
+          <View style={[styles.estadoBadge, { backgroundColor: getEstadoColor(item.estado) }]}>
+            <Text style={styles.estadoText}>{item.estado || 'Sin estado'}</Text>
+          </View>
         </View>
-        <View style={[styles.estadoBadge, { backgroundColor: getEstadoColor(item.estado) }]}>
-          <Text style={styles.estadoText}>{item.estado}</Text>
+
+        <View style={styles.citaDetalles}>
+          <View style={styles.detalleRow}>
+            <Ionicons name="calendar-outline" size={16} color="#666" />
+            <Text style={styles.detalleText}>
+              {formatearFecha(item.fecha_cita || item.fecha)}
+            </Text>
+          </View>
+          <View style={styles.detalleRow}>
+            <Ionicons name="time-outline" size={16} color="#666" />
+            <Text style={styles.detalleText}>
+              {item.hora_cita || item.hora || 'Sin hora'}
+            </Text>
+          </View>
+          <View style={styles.detalleRow}>
+            <Ionicons name="medical-outline" size={16} color="#666" />
+            <Text style={styles.detalleText}>
+              {obtenerEspecialidad()}
+            </Text>
+          </View>
+        </View>
+
+        <Text style={styles.motivoText}>
+          {item.motivo_consulta || item.motivo || 'Sin motivo especificado'}
+        </Text>
+
+        <View style={styles.accionesContainer}>
+          <TouchableOpacity
+            style={[styles.botonAccion, styles.botonEditar]}
+            onPress={() => editarCita(item)}
+          >
+            <Ionicons name="create-outline" size={20} color="#1976D2" />
+            <Text style={styles.botonText}>Editar</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.botonAccion, styles.botonEliminar]}
+            onPress={() => eliminarCita(item.id)}
+          >
+            <Ionicons name="trash-outline" size={20} color="#F44336" />
+            <Text style={styles.botonText}>Eliminar</Text>
+          </TouchableOpacity>
         </View>
       </View>
-
-      <View style={styles.citaDetalles}>
-        <View style={styles.detalleRow}>
-          <Ionicons name="calendar-outline" size={16} color="#666" />
-          <Text style={styles.detalleText}>{item.fecha}</Text>
-        </View>
-        <View style={styles.detalleRow}>
-          <Ionicons name="time-outline" size={16} color="#666" />
-          <Text style={styles.detalleText}>{item.hora}</Text>
-        </View>
-        <View style={styles.detalleRow}>
-          <Ionicons name="medical-outline" size={16} color="#666" />
-          <Text style={styles.detalleText}>{item.especialidad}</Text>
-        </View>
-      </View>
-
-      <Text style={styles.motivoText}>{item.motivo}</Text>
-
-      <View style={styles.accionesContainer}>
-        <TouchableOpacity
-          style={[styles.botonAccion, styles.botonEditar]}
-          onPress={() => editarCita(item)}
-        >
-          <Ionicons name="create-outline" size={20} color="#1976D2" />
-          <Text style={styles.botonText}>Editar</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.botonAccion, styles.botonEliminar]}
-          onPress={() => eliminarCita(item.id)}
-        >
-          <Ionicons name="trash-outline" size={20} color="#F44336" />
-          <Text style={styles.botonText}>Eliminar</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <View style={styles.container}>

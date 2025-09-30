@@ -16,7 +16,14 @@ const api = axios.create({
 });
 
 // Rutas públicas que no requieren autenticación
-const RutasPublicas = ['/login', '/register-paciente'];
+const RutasPublicas = [
+  '/login', 
+  '/register-paciente',
+  '/public/eps',
+  '/public/especialidades',
+  '/public/consultorios',
+  '/public/medicos'
+];
 
 // Interceptor para agregar el token de autenticación
 api.interceptors.request.use(
@@ -24,7 +31,7 @@ api.interceptors.request.use(
         const esRutaPublica = RutasPublicas.some(ruta => config.url.includes(ruta));
 
         if (!esRutaPublica) {
-            try {
+            try { 
                 const userToken = await AsyncStorage.getItem('userToken');
                 if (userToken) {
                     config.headers.Authorization = `Bearer ${userToken}`;

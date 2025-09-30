@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import MedicosService from '../../src/service/MedicosService';
 
 export default function ListarMedico() {
   const navigation = useNavigation();
@@ -20,56 +21,56 @@ export default function ListarMedico() {
   const medicosEjemplo = [
     {
       id: '1',
-      nombre: 'Dr. Wylmer',
-      apellido: 'Morales',
+      nombre: 'Dr. Carlos García',
+      apellido: 'García',
       especialidad: 'Cardiología',
-      cedula: '56781234',
+      cedula: '12345678',
       telefono: '(601) 123-4567',
-      email: 'Wilmer.Morales@hospital.com',
+      email: 'carlos.garcia@hospital.com',
       experiencia: '8 años',
       consultorio: '101',
     },
     {
       id: '2',
-      nombre: 'Dra. Andres',
-      apellido: 'Saavedra',
+      nombre: 'Dra. Ana Martínez',
+      apellido: 'Martínez',
       especialidad: 'Dermatología',
-      cedula: '67892345',
+      cedula: '23456789',
       telefono: '(601) 234-5678',
-      email: 'andresaavedra@hospital.com',
+      email: 'ana.martinez@hospital.com',
       experiencia: '5 años',
       consultorio: '205',
     },
     {
       id: '3',
-      nombre: 'Dr. Juan Pablo',
-      apellido: 'Barrera',
+      nombre: 'Dr. Luis Fernández',
+      apellido: 'Fernández',
       especialidad: 'Ortopedia',
-      cedula: '78903456',
+      cedula: '34567890',
       telefono: '(601) 345-6789',
-      email: 'Juan.Barrera@hospital.com',
+      email: 'luis.fernandez@hospital.com',
       experiencia: '12 años',
       consultorio: '310',
     },
     {
       id: '4',
-      nombre: 'Dra. Valentina',
-      apellido: 'Cepeda',
+      nombre: 'Dra. Carmen Ruiz',
+      apellido: 'Ruiz',
       especialidad: 'Ginecología',
       cedula: '45678901',
       telefono: '(601) 456-7890',
-      email: 'Valentina.cepeda@hospital.com',
+      email: 'carmen.ruiz@hospital.com',
       experiencia: '10 años',
       consultorio: '415',
     },
     {
       id: '5',
-      nombre: 'Dr. Maryuri',
-      apellido: 'Zorro',
+      nombre: 'Dr. Miguel Torres',
+      apellido: 'Torres',
       especialidad: 'Neurología',
-      cedula: '90125678',
+      cedula: '56789012',
       telefono: '(601) 567-8901',
-      email: 'Maryuri.Zorro@hospital.com',
+      email: 'miguel.torres@hospital.com',
       experiencia: '15 años',
       consultorio: '520',
     },
@@ -79,25 +80,47 @@ export default function ListarMedico() {
     cargarMedicos();
   }, []);
 
-  const cargarMedicos = () => {
-    // Simular carga de datos
-    setMedicos(medicosEjemplo);
+  // Escuchar cambios cuando se regresa de editar
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      // Recargar médicos cuando la pantalla recibe foco
+      cargarMedicos();
+    });
+
+    return unsubscribe;
+  }, [navigation]);
+
+  const cargarMedicos = async () => {
+    try {
+      console.log('Cargando médicos desde la base de datos...');
+      const result = await MedicosService.obtenerMedicos();
+      
+      if (result.success && result.data && result.data.length > 0) {
+        console.log('✅ Médicos cargados desde BD:', result.data.length);
+        setMedicos(result.data);
+      } else {
+        console.log('⚠️ Usando datos de ejemplo - Error del servidor:', result.message);
+        // Usar datos de ejemplo como fallback sin mostrar error
+        setMedicos(medicosEjemplo);
+      }
+    } catch (error) {
+      console.error('❌ Error de conexión al cargar médicos:', error);
+      // Usar datos de ejemplo como fallback sin mostrar error
+      setMedicos(medicosEjemplo);
+    }
   };
 
-  const onRefresh = () => {
+  const onRefresh = async () => {
     setRefreshing(true);
-    // Simular recarga de datos
-    setTimeout(() => {
-      cargarMedicos();
-      setRefreshing(false);
-    }, 1000);
+    await cargarMedicos();
+    setRefreshing(false);
   };
 
   const editarMedico = (medico) => {
     navigation.navigate('EditarMedico', { medico });
   };
 
-  const eliminarMedico = (id) => {
+  const eliminarMedico = async (id) => {
     Alert.alert(
       'Confirmar eliminación',
       '¿Estás seguro de que deseas eliminar este médico?',
@@ -109,9 +132,19 @@ export default function ListarMedico() {
         {
           text: 'Eliminar',
           style: 'destructive',
-          onPress: () => {
-            setMedicos(medicos.filter(medico => medico.id !== id));
-            Alert.alert('Éxito', 'Médico eliminado correctamente');
+          onPress: async () => {
+            try {
+              const result = await MedicosService.eliminarMedico(id);
+              if (result.success) {
+                setMedicos(medicos.filter(medico => medico.id !== id));
+                Alert.alert('Éxito', 'Médico eliminado correctamente');
+              } else {
+                Alert.alert('Error', result.message);
+              }
+            } catch (error) {
+              console.error('Error al eliminar médico:', error);
+              Alert.alert('Error', 'No se pudo eliminar el médico');
+            }
           },
         },
       ]
@@ -123,7 +156,9 @@ export default function ListarMedico() {
       <View style={styles.medicoHeader}>
         <View style={styles.medicoInfo}>
           <Text style={styles.medicoNombre}>{item.nombre} {item.apellido}</Text>
-          <Text style={styles.medicoEspecialidad}>{item.especialidad}</Text>
+          <Text style={styles.medicoEspecialidad}>
+            {item.especialidad?.nombre || item.especialidad || 'Sin especialidad'}
+          </Text>
         </View>
         <View style={styles.medicoCedula}>
           <Text style={styles.cedulaText}>CC: {item.cedula}</Text>
@@ -133,19 +168,23 @@ export default function ListarMedico() {
       <View style={styles.medicoDetalles}>
         <View style={styles.detalleRow}>
           <Ionicons name="call-outline" size={16} color="#666" />
-          <Text style={styles.detalleText}>{item.telefono}</Text>
+          <Text style={styles.detalleText}>{item.telefono || 'Sin teléfono'}</Text>
         </View>
         <View style={styles.detalleRow}>
           <Ionicons name="mail-outline" size={16} color="#666" />
-          <Text style={styles.detalleText}>{item.email}</Text>
+          <Text style={styles.detalleText}>{item.email || 'Sin email'}</Text>
         </View>
         <View style={styles.detalleRow}>
           <Ionicons name="business-outline" size={16} color="#666" />
-          <Text style={styles.detalleText}>Consultorio {item.consultorio}</Text>
+          <Text style={styles.detalleText}>
+            Consultorio {item.consultorio_id || item.consultorio || 'Sin asignar'}
+          </Text>
         </View>
         <View style={styles.detalleRow}>
           <Ionicons name="time-outline" size={16} color="#666" />
-          <Text style={styles.detalleText}>{item.experiencia} de experiencia</Text>
+          <Text style={styles.detalleText}>
+            {item.experiencia_anos || item.experiencia || '0'} años de experiencia
+          </Text>
         </View>
       </View>
 
